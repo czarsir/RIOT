@@ -84,6 +84,14 @@ extern "C" {
 /** @} */
 
 
+#define at86rf2xx_PARAMS_BOARD      {.spi = SPI_1, \
+.spi_speed = SPI_SPEED_5MHZ, \
+.cs_pin = GPIO_PIN(PORT_A, 4), \
+.int_pin = GPIO_PIN(PORT_A, 15), \
+.sleep_pin = GPIO_PIN(PORT_B, 9), \
+.reset_pin = GPIO_PIN(PORT_B, 8)}
+
+
 /**
  * @brief Initialize board specific hardware, including clock, LEDs and std-IO
  */
