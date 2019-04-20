@@ -1,29 +1,7 @@
 /*
- * Copyright (C) 2015 Freie Universität Berlin
  *
- * This file is subject to the terms and conditions of the GNU Lesser General
- * Public License v2.1. See the file LICENSE in the top level directory for more
- * details.
- */
-
-/**
- * @defgroup    drivers_at86rf2xx AT86RF2xx based drivers
- * @ingroup     drivers_netdev
+ * taken from AT86RF2xx based driver.
  *
- * This module contains drivers for radio devices in Atmel's AT86RF2xx series.
- * The driver is aimed to work with all devices of this series.
- *
- * @{
- *
- * @file
- * @brief       Interface definition for AT86RF2xx based drivers
- *
- * @author      Thomas Eichinger <thomas.eichinger@fu-berlin.de>
- * @author      Hauke Petersen <hauke.petersen@fu-berlin.de>
- * @author      Kaspar Schleiser <kaspar@schleiser.de>
- * @author      Daniel Krebs <github@daniel-krebs.net>
- * @author      Kévin Roussel <Kevin.Roussel@inria.fr>
- * @author      Joakim Nohlgård <joakim.nohlgard@eistec.se>
  */
 
 #ifndef _AT86RF215_H
@@ -205,7 +183,7 @@ void at86rf215_setup(at86rf2xx_t *dev, const at86rf2xx_params_t *params);
  *
  * @param[in,out] dev       device to reset
  */
-void at86rf2xx_reset(at86rf2xx_t *dev);
+void at86rf215_reset(at86rf2xx_t *dev);
 
 /**
  * @brief   Get the short address of the given device

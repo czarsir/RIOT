@@ -1,37 +1,20 @@
 /*
- * Copyright (C) 2013 Alaeddine Weslati <alaeddine.weslati@inria.fr>
- * Copyright (C) 2015 Freie Universität Berlin
- *               2017 HAW Hamburg
  *
- * This file is subject to the terms and conditions of the GNU Lesser General
- * Public License v2.1. See the file LICENSE in the top level directory for more
- * details.
+ * taken from AT86RF2xx based driver.
+ *
  */
 
-/**
- * @ingroup     drivers_at86rf2xx
- * @{
- *
- * @file
- * @brief       Internal interfaces for AT86RF2xx drivers
- *
- * @author      Alaeddine Weslati <alaeddine.weslati@inria.fr>
- * @author      Thomas Eichinger <thomas.eichinger@fu-berlin.de>
- * @author      Hauke Petersen <hauke.petersen@fu-berlin.de>
- * @author      Sebastian Meiling <s@mlng.net>
- */
-
-#ifndef AT86RF215_INTERNAL_H
-#define AT86RF215_INTERNAL_H
+#ifndef _AT86RF215_INTERNAL_H
+#define _AT86RF215_INTERNAL_H
 
 #include <stdint.h>
 
 #include "at86rf215.h"
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 
 /**
  * @brief Max. allowed transmit power for the transceiver
@@ -81,7 +64,7 @@ extern "C" {
  *
  * @return              the value of the specified register
  */
-uint8_t at86rf2xx_reg_read(const at86rf2xx_t *dev, uint8_t addr);
+uint8_t at86rf215_reg_read(const at86rf2xx_t *dev, uint16_t addr);
 
 /**
  * @brief   Write to a register at address `addr` from device `dev`.
@@ -90,7 +73,7 @@ uint8_t at86rf2xx_reg_read(const at86rf2xx_t *dev, uint8_t addr);
  * @param[in] addr      address of the register to write
  * @param[in] value     value to write to the given register
  */
-void at86rf2xx_reg_write(const at86rf2xx_t *dev, uint8_t addr, uint8_t value);
+void at86rf215_reg_write(const at86rf2xx_t *dev, uint16_t addr, uint8_t value);
 
 /**
  * @brief   Read a chunk of data from the SRAM of the given device
@@ -194,9 +177,9 @@ void at86rf2xx_configure_phy(at86rf2xx_t *dev);
 void at86rf2xx_get_random(const at86rf2xx_t *dev, uint8_t *data, size_t len);
 #endif
 
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* AT86RF2XX_INTERNAL_H */
-/** @} */
+#endif

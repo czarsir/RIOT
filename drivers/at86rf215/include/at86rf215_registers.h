@@ -1,28 +1,11 @@
 /*
- * Copyright (C) 2013 Alaeddine Weslati <alaeddine.weslati@inria.fr>
- * Copyright (C) 2015 Freie Universität Berlin
  *
- * This file is subject to the terms and conditions of the GNU Lesser
- * General Public License v2.1. See the file LICENSE in the top level
- * directory for more details.
+ * taken from AT86RF2xx based driver.
+ *
  */
 
-/**
- * @ingroup     drivers_at86rf2xx
- * @{
- *
- * @file
- * @brief       Register and command definitions for AT86RF2xx devices
- *
- * @author      Alaeddine Weslati <alaeddine.weslati@inria.fr>
- * @author      Thomas Eichinger <thomas.eichinger@fu-berlin.de>
- * @author      Hauke Petersen <hauke.petersen@fu-berlin.de>
- * @author      Kaspar Schleiser <kaspar@schleiser.de>
- * @author      Kévin Roussel <Kevin.Roussel@inria.fr>
- */
-
-#ifndef AT86RF215_REGISTERS_H
-#define AT86RF215_REGISTERS_H
+#ifndef _AT86RF215_REGISTERS_H
+#define _AT86RF215_REGISTERS_H
 
 #include "at86rf215.h"
 
@@ -30,30 +13,19 @@
 extern "C" {
 #endif
 
-/**
- * @name    Constant part numbers of the AT86RF2xx device family
- * @{
- */
+/*** Part Number list ***/
 #define AT86RF212B_PARTNUM       (0x07)
 #define AT86RF231_PARTNUM        (0x03)
 #define AT86RF232_PARTNUM        (0x0a)
 #define AT86RF233_PARTNUM        (0x0b)
-/** @} */
+#define AT86RF215_PARTNUM        (0x34)
 
-/**
- * @name    Assign the part number for the device we are building the driver for
- * @{
- */
-#ifdef MODULE_AT86RF212B
-#define AT86RF2XX_PARTNUM           AT86RF212B_PARTNUM
-#elif MODULE_AT86RF232
-#define AT86RF2XX_PARTNUM           AT86RF232_PARTNUM
-#elif MODULE_AT86RF233
-#define AT86RF2XX_PARTNUM           AT86RF233_PARTNUM
-#else /* MODULE_AT86RF231 as default device */
-#define AT86RF2XX_PARTNUM           AT86RF231_PARTNUM
-#endif
-/** @} */
+/*** use AT86RF215 ***/
+#define AT86RF2XX_PARTNUM           AT86RF215_PARTNUM
+
+/*** SPI Protocol ***/
+#define AT86RF215_ACCESS_READ                                   (0x0000)
+#define AT86RF215_ACCESS_WRITE                                  (0x8000)
 
 /**
  * @name    SPI access specifiers
@@ -71,7 +43,7 @@ extern "C" {
  * @{
  */
 #define AT86RF2XX_REG__TRX_STATUS                               (0x01)
-#define AT86RF2XX_REG__TRX_STATE                                (0x02)
+#define AT86RF215_REG__TRX_STATE                                (0x0103)
 #define AT86RF2XX_REG__TRX_CTRL_0                               (0x03)
 #define AT86RF2XX_REG__TRX_CTRL_1                               (0x04)
 #define AT86RF2XX_REG__PHY_TX_PWR                               (0x05)
@@ -122,6 +94,11 @@ extern "C" {
 #define AT86RF2XX_REG__CSMA_BE                                  (0x2F)
 #define AT86RF2XX_REG__TST_CTRL_DIGI                            (0x36)
 /** @} */
+
+/***
+ * Command
+ */
+#define AT86RF215_CMD_RF_TRX_OFF                                (0x02)
 
 /**
  * @name    Bitfield definitions for the TRX_CTRL_0 register
@@ -379,5 +356,4 @@ extern "C" {
 }
 #endif
 
-#endif /* AT86RF2XX_REGISTERS_H */
-/** @} */
+#endif
