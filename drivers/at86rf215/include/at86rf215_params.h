@@ -16,7 +16,7 @@ extern "C" {
 
 /*** board configuration ***/
 
-#define AT86RF215_PARAM_SPI         (SPI_DEV(1))
+#define AT86RF215_PARAM_SPI         (SPI_DEV(0))
 #define AT86RF215_PARAM_SPI_CLK     (SPI_CLK_5MHZ)
 #define AT86RF215_PARAM_CS          (GPIO_PIN(PORT_A, 4))
 #define AT86RF215_PARAM_INT         (GPIO_PIN(PORT_A, 15))

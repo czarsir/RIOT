@@ -56,6 +56,8 @@ static int _init(netdev_t *netdev)
 
 	DEBUG("[rf215] init\n");
 
+	gpio_init(GPIO_PIN(PORT_B, 0), GPIO_OUT);
+
     /* initialize GPIOs */
     spi_init_cs(dev->params.spi, dev->params.cs_pin);
     gpio_init(dev->params.sleep_pin, GPIO_OUT);
@@ -64,11 +66,15 @@ static int _init(netdev_t *netdev)
     gpio_set(dev->params.reset_pin);
     gpio_init_int(dev->params.int_pin, GPIO_IN, GPIO_RISING, _irq_handler, dev);
 
+	/* test */
+	uint8_t temp = at86rf215_reg_read(dev, AT86RF215_REG__PART_NUM);
+	DEBUG("[rf215] init : part number 0x%x\n", temp);
+
     /* reset device to default values and put it into RX state */
     at86rf215_reset(dev);
 
     /* test if the SPI is set up correctly and the device is responding */
-    if (at86rf215_reg_read(dev, AT86RF2XX_REG__PART_NUM) != AT86RF2XX_PARTNUM) {
+    if (at86rf215_reg_read(dev, AT86RF215_REG__PART_NUM) != AT86RF2XX_PARTNUM) {
         DEBUG("[at86rf2xx] error: unable to read correct part number\n");
         return -1;
     }

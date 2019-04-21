@@ -26,7 +26,10 @@ void at86rf215_reg_write(const at86rf2xx_t *dev, uint16_t addr, uint8_t value)
     uint16_t cmd = (AT86RF215_ACCESS_WRITE | addr);
 
     getbus(dev);
-	spi_transfer_bytes(SPIDEV, CSPIN, true, &cmd, NULL, 2);
+	/*** must be MSB first ***/
+	spi_transfer_byte(SPIDEV, CSPIN, true, (uint8_t)(cmd>>8));
+	spi_transfer_byte(SPIDEV, CSPIN, true, (uint8_t)(cmd));
+	//spi_transfer_bytes(SPIDEV, CSPIN, true, &cmd, NULL, 2);
 	spi_transfer_bytes(SPIDEV, CSPIN, false, &value, NULL, 1);
     spi_release(SPIDEV);
 }
@@ -37,7 +40,10 @@ uint8_t at86rf215_reg_read(const at86rf2xx_t *dev, uint16_t addr)
     uint8_t value;
 
     getbus(dev);
-	spi_transfer_bytes(SPIDEV, CSPIN, true, &cmd, NULL, 2);
+	/*** must be MSB first ***/
+	spi_transfer_byte(SPIDEV, CSPIN, true, (uint8_t)(cmd>>8));
+	spi_transfer_byte(SPIDEV, CSPIN, true, (uint8_t)(cmd));
+	//spi_transfer_bytes(SPIDEV, CSPIN, true, &cmd, NULL, 2);
 	value = spi_transfer_byte(SPIDEV, CSPIN, false, 0);
     spi_release(SPIDEV);
 
@@ -129,12 +135,17 @@ void at86rf2xx_hardware_reset(at86rf2xx_t *dev)
     gpio_set(dev->params.reset_pin);
     xtimer_usleep(AT86RF2XX_RESET_DELAY);
 
+	/*** test ***/
+	dev->state = at86rf215_reg_read(dev, AT86RF215_REG__RF09_STATE)
+					& AT86RF215_RFn_STATUS_MASK;
+	DEBUG("[rf215] -- -- hardware_reset : state 0x%x\n", dev->state);
+
     /* update state: if the radio state was P_ON (initialization phase),
      * it remains P_ON. Otherwise, it should go to TRX_OFF
      */
     do {
-        dev->state = at86rf215_reg_read(dev, AT86RF2XX_REG__TRX_STATUS)
-                     & AT86RF2XX_TRX_STATUS_MASK__TRX_STATUS;
+        dev->state = at86rf215_reg_read(dev, AT86RF215_REG__RF09_STATE)
+                     & AT86RF215_RFn_STATUS_MASK;
     } while ((dev->state != AT86RF2XX_STATE_TRX_OFF)
              && (dev->state != AT86RF2XX_STATE_P_ON));
 }

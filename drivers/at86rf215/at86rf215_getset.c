@@ -399,14 +399,14 @@ static inline void _set_state(at86rf2xx_t *dev, uint8_t state, uint8_t cmd)
      * in https://github.com/RIOT-OS/RIOT/pull/5244
      */
     if (state != AT86RF2XX_STATE_RX_AACK_ON) {
-		DEBUG("[rf215] -- -- -- set state 1\n");
+		DEBUG("[rf215] -- -- -- set_state 1\n");
         while (at86rf2xx_get_status(dev) != state) {}
     }
     /* Although RX_AACK_ON state doesn't get read back,
      * at least make sure if state transition is in progress or not
      */
     else {
-		DEBUG("[rf215] -- -- -- set state 2\n");
+		DEBUG("[rf215] -- -- -- set_state 2\n");
         while (at86rf2xx_get_status(dev) == AT86RF2XX_STATE_IN_PROGRESS) {}
     }
 
@@ -417,7 +417,7 @@ uint8_t at86rf2xx_set_state(at86rf2xx_t *dev, uint8_t state)
 {
     uint8_t old_state;
 
-	DEBUG("[rf215] -- -- set state\n");
+	DEBUG("[rf215] -- -- set_state\n");
     /* make sure there is no ongoing transmission, or state transition already
      * in progress */
     do {
@@ -427,7 +427,7 @@ uint8_t at86rf2xx_set_state(at86rf2xx_t *dev, uint8_t state)
              old_state == AT86RF2XX_STATE_IN_PROGRESS);
 
     if (state == AT86RF2XX_STATE_FORCE_TRX_OFF) {
-		DEBUG("[rf215] -- -- set state : FORCE_TRX_OFF\n");
+		DEBUG("[rf215] -- -- set_state : FORCE_TRX_OFF\n");
 		_set_state(dev, AT86RF2XX_STATE_TRX_OFF, AT86RF215_CMD_RF_TRX_OFF);
         //_set_state(dev, AT86RF2XX_STATE_TRX_OFF, state);
     }

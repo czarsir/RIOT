@@ -38,6 +38,7 @@ void at86rf215_reset(at86rf2xx_t *dev)
 	DEBUG("[rf215] -- reset : hardware reset\n");
     at86rf2xx_hardware_reset(dev);
 
+	DEBUG("[rf215] -- reset : ieee reset\n");
     netdev_ieee802154_reset(&dev->netdev);
 
 	DEBUG("[rf215] -- reset : set state\n");
@@ -46,6 +47,7 @@ void at86rf215_reset(at86rf2xx_t *dev)
         at86rf2xx_set_state(dev, AT86RF2XX_STATE_FORCE_TRX_OFF);
     }
 
+	DEBUG("[rf215] -- reset : set hardware address\n");
     /* get an 8-byte unique ID to use as hardware address */
     luid_get(addr_long.uint8, IEEE802154_LONG_ADDRESS_LEN);
     /* make sure we mark the address as non-multicast and not globally unique */

@@ -23,7 +23,7 @@ extern "C" {
 /*** use AT86RF215 ***/
 #define AT86RF2XX_PARTNUM           AT86RF215_PARTNUM
 
-/*** SPI Protocol ***/
+/*** SPI Protocol cmd ***/
 #define AT86RF215_ACCESS_READ                                   (0x0000)
 #define AT86RF215_ACCESS_WRITE                                  (0x8000)
 
@@ -37,6 +37,10 @@ extern "C" {
 #define AT86RF2XX_ACCESS_READ                                   (0x00)
 #define AT86RF2XX_ACCESS_WRITE                                  (0x40)
 /** @} */
+
+/*** Register addresses ***/
+#define AT86RF215_REG__PART_NUM                                 (0x000D)
+#define AT86RF215_REG__RF09_STATE                               (0x0102)
 
 /**
  * @name    Register addresses
@@ -72,7 +76,6 @@ extern "C" {
 #endif
 #define AT86RF2XX_REG__PLL_CF                                   (0x1A)
 #define AT86RF2XX_REG__PLL_DCU                                  (0x1B)
-#define AT86RF2XX_REG__PART_NUM                                 (0x1C)
 #define AT86RF2XX_REG__VERSION_NUM                              (0x1D)
 #define AT86RF2XX_REG__MAN_ID_0                                 (0x1E)
 #define AT86RF2XX_REG__MAN_ID_1                                 (0x1F)
@@ -94,6 +97,9 @@ extern "C" {
 #define AT86RF2XX_REG__CSMA_BE                                  (0x2F)
 #define AT86RF2XX_REG__TST_CTRL_DIGI                            (0x36)
 /** @} */
+
+/*** Mask ***/
+#define AT86RF215_RFn_STATUS_MASK                               (0x07)
 
 /***
  * Command
