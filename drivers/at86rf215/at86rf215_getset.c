@@ -391,7 +391,7 @@ void at86rf2xx_set_option(at86rf2xx_t *dev, uint16_t option, bool state)
 
 static inline void _set_state(at86rf2xx_t *dev, uint8_t state, uint8_t cmd)
 {
-    at86rf215_reg_write(dev, AT86RF215_REG__TRX_STATE, cmd);
+    at86rf215_reg_write(dev, AT86RF215_REG__RF09_CMD, cmd);
 
     /* To prevent a possible race condition when changing to
      * RX_AACK_ON state the state doesn't get read back in that
@@ -417,7 +417,7 @@ uint8_t at86rf2xx_set_state(at86rf2xx_t *dev, uint8_t state)
 {
     uint8_t old_state;
 
-	DEBUG("[rf215] -- -- set_state\n");
+	DEBUG("[rf215] -- -- set_state 0x%x\n", state);
     /* make sure there is no ongoing transmission, or state transition already
      * in progress */
     do {

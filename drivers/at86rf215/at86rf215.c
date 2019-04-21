@@ -41,13 +41,13 @@ void at86rf215_reset(at86rf2xx_t *dev)
 	DEBUG("[rf215] -- reset : ieee reset\n");
     netdev_ieee802154_reset(&dev->netdev);
 
-	DEBUG("[rf215] -- reset : set state\n");
     /* Reset state machine to ensure a known state */
     if (dev->state == AT86RF2XX_STATE_P_ON) {
+		DEBUG("[rf215] -- reset : set state (TRX OFF)\n");
         at86rf2xx_set_state(dev, AT86RF2XX_STATE_FORCE_TRX_OFF);
     }
 
-	DEBUG("[rf215] -- reset : set hardware address\n");
+	DEBUG("[rf215] -- reset : set config\n");
     /* get an 8-byte unique ID to use as hardware address */
     luid_get(addr_long.uint8, IEEE802154_LONG_ADDRESS_LEN);
     /* make sure we mark the address as non-multicast and not globally unique */
@@ -92,8 +92,12 @@ void at86rf215_reset(at86rf2xx_t *dev)
     /* clear interrupt flags */
     at86rf215_reg_read(dev, AT86RF2XX_REG__IRQ_STATUS);
 
+	DEBUG("[rf215] -- reset : set state (RX AACK ON)\n");
     /* go into RX state */
-    at86rf2xx_set_state(dev, AT86RF2XX_STATE_RX_AACK_ON);
+    //at86rf2xx_set_state(dev, AT86RF2XX_STATE_RX_AACK_ON);
+	tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_AMCS);
+	tmp |= AT86RF215_AMCS_ENABLE;
+	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_AMCS, tmp);
 
     DEBUG("[rf215] -- reset : complete.\n");
 }
@@ -138,7 +142,7 @@ void at86rf2xx_tx_exec(const at86rf2xx_t *dev)
     /* write frame length field in FIFO */
     at86rf2xx_sram_write(dev, 0, &(dev->tx_frame_len), 1);
     /* trigger sending of pre-loaded frame */
-    at86rf215_reg_write(dev, AT86RF215_REG__TRX_STATE,
+    at86rf215_reg_write(dev, AT86RF215_REG__RF09_CMD,
                         AT86RF2XX_TRX_STATE__TX_START);
     if (netdev->event_callback &&
         (dev->netdev.flags & AT86RF2XX_OPT_TELL_TX_START)) {

@@ -70,6 +70,7 @@ static int _init(netdev_t *netdev)
 	uint8_t temp = at86rf215_reg_read(dev, AT86RF215_REG__PART_NUM);
 	DEBUG("[rf215] init : part number 0x%x\n", temp);
 
+	DEBUG("[rf215] init : reset\n");
     /* reset device to default values and put it into RX state */
     at86rf215_reset(dev);
 
@@ -83,6 +84,7 @@ static int _init(netdev_t *netdev)
     memset(&netdev->stats, 0, sizeof(netstats_t));
 #endif
 
+	DEBUG("[rf215] init : complete.\n");
     return 0;
 }
 
@@ -586,7 +588,7 @@ static void _isr(netdev_t *netdev)
     /* read (consume) device status */
     irq_mask = at86rf215_reg_read(dev, AT86RF2XX_REG__IRQ_STATUS);
 
-    trac_status = at86rf215_reg_read(dev, AT86RF215_REG__TRX_STATE)
+    trac_status = at86rf215_reg_read(dev, AT86RF215_REG__RF09_CMD)
                   & AT86RF2XX_TRX_STATE_MASK__TRAC;
 
     if (irq_mask & AT86RF2XX_IRQ_STATUS_MASK__RX_START) {

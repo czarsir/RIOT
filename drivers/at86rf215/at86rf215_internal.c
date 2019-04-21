@@ -102,8 +102,8 @@ uint8_t at86rf2xx_get_status(const at86rf2xx_t *dev)
         return dev->state;
     }
 
-    return (at86rf215_reg_read(dev, AT86RF2XX_REG__TRX_STATUS)
-            & AT86RF2XX_TRX_STATUS_MASK__TRX_STATUS);
+    return (at86rf215_reg_read(dev, AT86RF215_REG__RF09_STATE)
+            & AT86RF215_RFn_STATE_MASK);
 }
 
 void at86rf2xx_assert_awake(at86rf2xx_t *dev)
@@ -137,7 +137,7 @@ void at86rf2xx_hardware_reset(at86rf2xx_t *dev)
 
 	/*** test ***/
 	dev->state = at86rf215_reg_read(dev, AT86RF215_REG__RF09_STATE)
-					& AT86RF215_RFn_STATUS_MASK;
+					& AT86RF215_RFn_STATE_MASK;
 	DEBUG("[rf215] -- -- hardware_reset : state 0x%x\n", dev->state);
 
     /* update state: if the radio state was P_ON (initialization phase),
@@ -145,15 +145,15 @@ void at86rf2xx_hardware_reset(at86rf2xx_t *dev)
      */
     do {
         dev->state = at86rf215_reg_read(dev, AT86RF215_REG__RF09_STATE)
-                     & AT86RF215_RFn_STATUS_MASK;
-    } while ((dev->state != AT86RF2XX_STATE_TRX_OFF)
-             && (dev->state != AT86RF2XX_STATE_P_ON));
+                     & AT86RF215_RFn_STATE_MASK;
+    } while ((dev->state != AT86RF215_STATE_RF_TRXOFF)
+             && (dev->state != AT86RF215_STATE_RF_RESET));
 }
 
 void at86rf2xx_configure_phy(at86rf2xx_t *dev)
 {
     /* we must be in TRX_OFF before changing the PHY configuration */
-    uint8_t prev_state = at86rf2xx_set_state(dev, AT86RF2XX_STATE_TRX_OFF);
+    uint8_t prev_state = at86rf2xx_set_state(dev, AT86RF215_CMD_RF_TRX_OFF);
 
 #ifdef MODULE_AT86RF212B
     /* The TX power register must be updated after changing the channel if

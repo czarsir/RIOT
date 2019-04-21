@@ -86,6 +86,10 @@ extern "C" {
 #define AT86RF2XX_HAVE_RETRIES             (0)
 #endif
 
+/****** RF state ******/
+#define AT86RF215_STATE_RF_TRXOFF          (0x02)
+#define AT86RF215_STATE_RF_RESET           (0x07)
+
 /**
  * @name    Flags for device internal states (see datasheet)
  * @{

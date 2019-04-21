@@ -38,16 +38,25 @@ extern "C" {
 #define AT86RF2XX_ACCESS_WRITE                                  (0x40)
 /** @} */
 
-/*** Register addresses ***/
+
+/****** Register addresses ***************************************************/
+
+/*** base ***/
 #define AT86RF215_REG__PART_NUM                                 (0x000D)
+
+/*** RF09 ***/
 #define AT86RF215_REG__RF09_STATE                               (0x0102)
+#define AT86RF215_REG__RF09_CMD                                 (0x0103)
+
+/*** BBC0 ***/
+#define AT86RF215_REG__BBC0_AMCS                                (0x0340)
 
 /**
  * @name    Register addresses
  * @{
  */
 #define AT86RF2XX_REG__TRX_STATUS                               (0x01)
-#define AT86RF215_REG__TRX_STATE                                (0x0103)
+
 #define AT86RF2XX_REG__TRX_CTRL_0                               (0x03)
 #define AT86RF2XX_REG__TRX_CTRL_1                               (0x04)
 #define AT86RF2XX_REG__PHY_TX_PWR                               (0x05)
@@ -99,12 +108,18 @@ extern "C" {
 /** @} */
 
 /*** Mask ***/
-#define AT86RF215_RFn_STATUS_MASK                               (0x07)
+#define AT86RF215_RFn_STATE_MASK                                (0x07)
+
+
+/****** Control *************************************************************/
 
 /***
  * Command
  */
 #define AT86RF215_CMD_RF_TRX_OFF                                (0x02)
+
+/*** AMCS – Auto Mode Configuration and Status ***/
+#define AT86RF215_AMCS_ENABLE                                   (0x08)
 
 /**
  * @name    Bitfield definitions for the TRX_CTRL_0 register
