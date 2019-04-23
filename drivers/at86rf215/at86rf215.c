@@ -96,7 +96,7 @@ void at86rf215_reset(at86rf2xx_t *dev)
     /* go into RX state */
     //at86rf2xx_set_state(dev, AT86RF2XX_STATE_RX_AACK_ON);
 	tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_AMCS);
-	tmp |= AT86RF215_AMCS_ENABLE;
+	tmp |= AT86RF215_AACK_ENABLE;
 	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_AMCS, tmp);
 
     DEBUG("[rf215] -- reset : complete.\n");
@@ -117,14 +117,21 @@ size_t at86rf2xx_send(at86rf2xx_t *dev, const uint8_t *data, size_t len)
 
 void at86rf2xx_tx_prepare(at86rf2xx_t *dev)
 {
-    uint8_t state;
+//    uint8_t state;
+
+	DEBUG("[rf215] -- tx_prepare \n");
 
     dev->pending_tx++;
-    state = at86rf2xx_set_state(dev, AT86RF2XX_STATE_TX_ARET_ON);
-    if (state != AT86RF2XX_STATE_TX_ARET_ON) {
-        dev->idle_state = state;
-    }
+	DEBUG("[rf215] -- tx_prepare : set state (TX ARET ON)\n");
+    //state = at86rf2xx_set_state(dev, AT86RF2XX_STATE_TX_ARET_ON);
+	uint8_t tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_AMCS);
+	tmp |= AT86RF215_CCATX_ENABLE;
+	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_AMCS, tmp);
+//    if (state != AT86RF2XX_STATE_TX_ARET_ON) {
+//        dev->idle_state = state;
+//    }
     dev->tx_frame_len = IEEE802154_FCS_LEN;
+	DEBUG("[rf215] -- tx_prepare : complete.\n");
 }
 
 size_t at86rf2xx_tx_load(at86rf2xx_t *dev, const uint8_t *data,

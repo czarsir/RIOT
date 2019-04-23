@@ -32,7 +32,7 @@
 #include "net/gnrc/netif.h"
 #include "net/gnrc/netif/internal.h"
 
-#define ENABLE_DEBUG    (0)
+#define ENABLE_DEBUG    (1)
 #include "debug.h"
 
 #define _NETIF_NETAPI_MSG_QUEUE_SIZE    (8)

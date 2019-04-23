@@ -21,7 +21,7 @@
 #include "net/ipv6/hdr.h"
 #endif
 
-#define ENABLE_DEBUG (0)
+#define ENABLE_DEBUG (1)
 #include "debug.h"
 
 #if defined(MODULE_OD) && ENABLE_DEBUG
@@ -177,6 +177,8 @@ static int _send(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt)
     uint8_t flags = (uint8_t)(state->flags & NETDEV_IEEE802154_SEND_MASK);
     le_uint16_t dev_pan = byteorder_btols(byteorder_htons(state->pan));
 
+	DEBUG("[ieee802154] send \n");
+
     flags |= IEEE802154_FCF_TYPE_DATA;
     if (pkt == NULL) {
         DEBUG("_send_ieee802154: pkt was NULL\n");
@@ -205,6 +207,7 @@ static int _send(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt)
         src_len = netif->l2addr_len;
         src = netif->l2addr;
     }
+	DEBUG("[ieee802154] send : set frame\n");
     /* fill MAC header, seq should be set by device */
     if ((res = ieee802154_set_frame_hdr(mhr, src, src_len,
                                         dst, dst_len, dev_pan,
@@ -229,6 +232,7 @@ static int _send(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt)
         netif->dev->stats.tx_unicast_count++;
     }
 #endif
+	DEBUG("[ieee802154] send : do send\n");
 #ifdef MODULE_GNRC_MAC
     if (netif->mac.mac_info & GNRC_NETIF_MAC_INFO_CSMA_ENABLED) {
         res = csma_sender_csma_ca_send(dev, &iolist, &netif->mac.csma_conf);
@@ -242,6 +246,7 @@ static int _send(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt)
 
     /* release old data */
     gnrc_pktbuf_release(pkt);
+	DEBUG("[ieee802154] send : complete.\n");
     return res;
 }
 #else   /* MODULE_NETDEV_IEEE802154 */

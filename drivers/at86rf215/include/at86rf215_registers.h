@@ -119,7 +119,10 @@ extern "C" {
 #define AT86RF215_CMD_RF_TRX_OFF                                (0x02)
 
 /*** AMCS – Auto Mode Configuration and Status ***/
-#define AT86RF215_AMCS_ENABLE                                   (0x08)
+/* automatic acknowledgement */
+#define AT86RF215_AACK_ENABLE                                   (0x08)
+/* CCA measurement and automatic transmit */
+#define AT86RF215_CCATX_ENABLE                                  (0x02)
 
 /**
  * @name    Bitfield definitions for the TRX_CTRL_0 register

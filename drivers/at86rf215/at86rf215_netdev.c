@@ -93,6 +93,9 @@ static int _send(netdev_t *netdev, const iolist_t *iolist)
     at86rf2xx_t *dev = (at86rf2xx_t *)netdev;
     size_t len = 0;
 
+	DEBUG("[rf215] send \n");
+
+	DEBUG("[rf215] send : tx prepare\n");
     at86rf2xx_tx_prepare(dev);
 
     /* load packet data into FIFO */
@@ -106,13 +109,17 @@ static int _send(netdev_t *netdev, const iolist_t *iolist)
 #ifdef MODULE_NETSTATS_L2
         netdev->stats.tx_bytes += len;
 #endif
+		DEBUG("[rf215] send : tx load\n");
         len = at86rf2xx_tx_load(dev, iol->iol_base, iol->iol_len, len);
     }
 
     /* send data out directly if pre-loading id disabled */
     if (!(dev->netdev.flags & AT86RF2XX_OPT_PRELOADING)) {
+		DEBUG("[rf215] send : tx exec\n");
         at86rf2xx_tx_exec(dev);
     }
+
+	DEBUG("[rf215] send : complete.\n");
     /* return the number of bytes that were actually loaded into the frame
      * buffer/send out */
     return (int)len;
