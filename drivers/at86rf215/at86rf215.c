@@ -147,9 +147,12 @@ size_t at86rf2xx_tx_load(at86rf2xx_t *dev, const uint8_t *data,
 void at86rf2xx_tx_exec(const at86rf2xx_t *dev)
 {
     netdev_t *netdev = (netdev_t *)dev;
+	uint8_t tmp;
 
     /* write frame length field in FIFO */
-    at86rf2xx_sram_write(dev, 0, &(dev->tx_frame_len), 1);
+    //at86rf2xx_sram_write(dev, 0, &(dev->tx_frame_len), 1);
+	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_TXFLH, 0);
+	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_TXFLL, dev->tx_frame_len);
     /* trigger sending of pre-loaded frame */
     at86rf215_reg_write(dev, AT86RF215_REG__RF09_CMD,
                         AT86RF215_STATE_RF_TX);
@@ -157,6 +160,16 @@ void at86rf2xx_tx_exec(const at86rf2xx_t *dev)
         (dev->netdev.flags & AT86RF2XX_OPT_TELL_TX_START)) {
         netdev->event_callback(netdev, NETDEV_EVENT_TX_STARTED);
     }
+
+	/*** wait until end ***/
+	do {
+		tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_IRQS);
+	} while ( !(tmp|AT86RF215_BBCn_IRQS__TXFE_M) );
+
+	/*** enable baseband ***/
+	tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_PC);
+	tmp |= AT86RF215_BBEN_ENABLE;
+	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_PC, tmp);
 }
 
 bool at86rf2xx_cca(at86rf2xx_t *dev)

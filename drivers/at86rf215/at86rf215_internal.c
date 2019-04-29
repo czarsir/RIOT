@@ -65,13 +65,21 @@ void at86rf2xx_sram_read(const at86rf2xx_t *dev, uint8_t offset,
 void at86rf2xx_sram_write(const at86rf2xx_t *dev, uint8_t offset,
                           const uint8_t *data, size_t len)
 {
-    uint8_t reg = (AT86RF2XX_ACCESS_SRAM | AT86RF2XX_ACCESS_WRITE);
+//    uint8_t reg = (AT86RF2XX_ACCESS_SRAM | AT86RF2XX_ACCESS_WRITE);
+//
+//    getbus(dev);
+//    spi_transfer_byte(SPIDEV, CSPIN, true, reg);
+//    spi_transfer_byte(SPIDEV, CSPIN, true, offset);
+//    spi_transfer_bytes(SPIDEV, CSPIN, false, data, NULL, len);
+//    spi_release(SPIDEV);
 
-    getbus(dev);
-    spi_transfer_byte(SPIDEV, CSPIN, true, reg);
-    spi_transfer_byte(SPIDEV, CSPIN, true, offset);
-    spi_transfer_bytes(SPIDEV, CSPIN, false, data, NULL, len);
-    spi_release(SPIDEV);
+	uint16_t cmd = (AT86RF215_ACCESS_WRITE | (AT86RF215_REG__BBC0_FBTXS - 1 + offset));
+
+	getbus(dev);
+	spi_transfer_byte(SPIDEV, CSPIN, true, (uint8_t)(cmd>>8));
+	spi_transfer_byte(SPIDEV, CSPIN, true, (uint8_t)(cmd));
+	spi_transfer_bytes(SPIDEV, CSPIN, false, data, NULL, len);
+	spi_release(SPIDEV);
 }
 
 void at86rf2xx_fb_start(const at86rf2xx_t *dev)
