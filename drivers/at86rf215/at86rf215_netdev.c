@@ -230,12 +230,13 @@ static int _set_state(at86rf2xx_t *dev, netopt_state_t state)
 
 netopt_state_t _get_state(at86rf2xx_t *dev)
 {
+	DEBUG("[rf215] _get_state : 0x%x \n", at86rf2xx_get_status(dev));
     switch (at86rf2xx_get_status(dev)) {
         case AT86RF215_STATE_RF_SLEEP:
             return NETOPT_STATE_SLEEP;
         case AT86RF215_STATE_RF_TRXOFF:
             return NETOPT_STATE_STANDBY;
-        case AT86RF2XX_STATE_BUSY_RX_AACK:
+        case AT86RF215_STATE_RF_RX:
             return NETOPT_STATE_RX;
         case AT86RF2XX_STATE_BUSY_TX_ARET:
         case AT86RF2XX_STATE_TX_ARET_ON:
