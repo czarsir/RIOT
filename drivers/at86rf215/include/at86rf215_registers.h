@@ -47,8 +47,18 @@ extern "C" {
 /*** RF09 ***/
 #define AT86RF215_REG__RF09_STATE                               (0x0102)
 #define AT86RF215_REG__RF09_CMD                                 (0x0103)
+#define AT86RF215_REG__RF09_CNL                                 (0x0107)
+#define AT86RF215_REG__RF09_CNM                                 (0x0108)
 
 /*** BBC0 ***/
+#define AT86RF215_REG__BBC0_PC                                  (0x0301)
+#define AT86RF215_REG__BBC0_AFC0                                (0x0320)
+#define AT86RF215_REG__IEEE_MACEA_0                             (0x0325)
+//#define AT86RF215_REG__IEEE_MACEA_1                             (0x0326)
+#define AT86RF215_REG__IEEE_MACPID0_0                           (0x032D)
+#define AT86RF215_REG__IEEE_MACPID0_1                           (0x032E)
+#define AT86RF215_REG__IEEE_MACSHA0_0                           (0x032F)
+#define AT86RF215_REG__IEEE_MACSHA0_1                           (0x0330)
 #define AT86RF215_REG__BBC0_AMCS                                (0x0340)
 
 /**
@@ -116,7 +126,15 @@ extern "C" {
 /***
  * Command
  */
-#define AT86RF215_CMD_RF_TRX_OFF                                (0x02)
+
+
+/*** PC - PHY Control ***/
+/* Frame Check Sequence Filter Enable (default 0x1 enabled) */
+#define AT86RF215_FCSFE_ENABLE                                  (0x40)
+
+/*** Frame Filter ***/
+/* Promiscuous mode */
+#define AT86RF215_PM_ENABLE                                     (0x10)
 
 /*** AMCS – Auto Mode Configuration and Status ***/
 /* automatic acknowledgement */

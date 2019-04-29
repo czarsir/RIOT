@@ -32,7 +32,7 @@
 #include "net/gnrc/netif.h"
 #include "net/gnrc/netif/internal.h"
 
-#define ENABLE_DEBUG    (1)
+#define ENABLE_DEBUG    (0)
 #include "debug.h"
 
 #define _NETIF_NETAPI_MSG_QUEUE_SIZE    (8)
@@ -210,9 +210,11 @@ int gnrc_netif_get_from_netdev(gnrc_netif_t *netif, gnrc_netapi_opt_t *opt)
             break;
 #endif  /* MODULE_GNRC_SIXLOWPAN_IPHC */
         default:
+			//DEBUG("[gnrc_netif] get_from_netdev: default case %d\n", opt->opt);
             break;
     }
     if (res == -ENOTSUP) {
+		//DEBUG("[gnrc_netif] get_from_netdev: driver->get\n");
         res = netif->dev->driver->get(netif->dev, opt->opt, opt->data, opt->data_len);
     }
     gnrc_netif_release(netif);

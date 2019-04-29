@@ -86,7 +86,7 @@ typedef enum {
      *
      * Examples for this include the PAN ID in IEEE 802.15.4
      */
-    NETOPT_NID,
+    NETOPT_NID, // 6
 
     /**
      * @brief   (uint8_t) hop limit
@@ -122,7 +122,7 @@ typedef enum {
      * length greater than 0 to the getter. The array will be filled up to to
      * its maximum and the remaining addresses on the interface will be ignored
      */
-    NETOPT_IPV6_ADDR,
+    NETOPT_IPV6_ADDR, // 9
     /**
      * @brief   (@ref ipv6_addr_t) Removes an IPv6 address from an interface
      */
@@ -166,11 +166,11 @@ typedef enum {
     /**
      * @brief   (int16_t) transmit power for radio devices in dBm
      */
-    NETOPT_TX_POWER,
+    NETOPT_TX_POWER, // 16
     /**
      * @brief   (uint16_t) maximum packet size a network module can handle
      */
-    NETOPT_MAX_PACKET_SIZE,
+    NETOPT_MAX_PACKET_SIZE, // 17
     /**
      * @brief   (@ref netopt_enable_t) frame preloading
      *
@@ -185,7 +185,7 @@ typedef enum {
     /**
      * @brief   (@ref netopt_enable_t) automatic link layer ACKs
      */
-    NETOPT_AUTOACK,
+    NETOPT_AUTOACK, // 20
     /**
      * @brief   (@ref netopt_enable_t) frame pending bit of ACKs
      *
@@ -211,7 +211,7 @@ typedef enum {
     /**
      * @brief   (@ref netopt_state_t) state of network device
      */
-    NETOPT_STATE,
+    NETOPT_STATE, // 25
     /**
      * @brief   (@ref netopt_enable_t) when enabled, bypass protocol processing of incoming frames
      */
@@ -267,7 +267,7 @@ typedef enum {
      *
      * @todo How to get feedback?
      */
-    NETOPT_AUTOCCA,
+    NETOPT_AUTOCCA, // 31
 
     /**
      * @brief (@ref netopt_enable_t) Phy link status.
@@ -343,7 +343,7 @@ typedef enum {
      *
      * e.g. NETDEV_TYPE_ETHERNET, NETDEV_TYPE_IEEE802154, etc.
      */
-    NETOPT_DEVICE_TYPE,
+    NETOPT_DEVICE_TYPE, // 39
 
     /**
      * @brief   (uint8_t) channel page as defined by IEEE 802.15.4
@@ -365,7 +365,7 @@ typedef enum {
      * work has proven that dynamically adapting it to network environment can
      * improve QoS, especially in WSN.
      */
-    NETOPT_CCA_THRESHOLD,
+    NETOPT_CCA_THRESHOLD, // 41
 
     /**
      * @brief   (uint8_t) CCA mode for the radio transceiver
@@ -381,7 +381,7 @@ typedef enum {
      * Expects a pointer to a @ref netstats_t struct that will be pointed to
      * the corresponding @ref netstats_t of the module.
      */
-    NETOPT_STATS,
+    NETOPT_STATS, // 43
 
     /**
      * @brief   (@ref netopt_enable_t) link layer encryption.
@@ -420,7 +420,7 @@ typedef enum {
      * When setting this option a pointer to an link layer address as well as
      * the length of the address are expected as parameters.
      */
-    NETOPT_L2FILTER,
+    NETOPT_L2FILTER, // 47
 
     /**
      * @brief   (@ref l2filter_t) remove an address from a link layer filter list
@@ -458,12 +458,12 @@ typedef enum {
      * each channel (867300000, etc) for a given frequency band
      * (868, 915, etc).
      */
-    NETOPT_CHANNEL_FREQUENCY,
+    NETOPT_CHANNEL_FREQUENCY, // 52
 
     /**
      * @brief   (@ref netopt_enable_t) channel hopping
      */
-    NETOPT_CHANNEL_HOP,
+    NETOPT_CHANNEL_HOP, // 53
 
     /**
      * @brief   (uint8_t) channel hopping period
@@ -494,7 +494,7 @@ typedef enum {
     /**
      * @brief   (uint8_t) radio modulation bandwidth
      */
-    NETOPT_BANDWIDTH,
+    NETOPT_BANDWIDTH, // 58
 
     /**
      * @brief   (uint8_t) radio spreading factor
@@ -521,7 +521,7 @@ typedef enum {
      *
      * @see [RFC 6282](https://tools.ietf.org/html/rfc6282)
      */
-    NETOPT_6LO_IPHC,
+    NETOPT_6LO_IPHC, // 63
 
     /**
      * @brief   (uint8_t) retry amount from missing ACKs of the last transmission

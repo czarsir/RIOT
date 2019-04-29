@@ -188,13 +188,14 @@ static int _set_state(at86rf2xx_t *dev, netopt_state_t state)
 {
     switch (state) {
         case NETOPT_STATE_STANDBY:
-            at86rf2xx_set_state(dev, AT86RF2XX_STATE_TRX_OFF);
+            at86rf2xx_set_state(dev, AT86RF215_STATE_RF_TRXOFF);
             break;
         case NETOPT_STATE_SLEEP:
-            at86rf2xx_set_state(dev, AT86RF2XX_STATE_SLEEP);
+            at86rf2xx_set_state(dev, AT86RF215_STATE_RF_SLEEP);
             break;
         case NETOPT_STATE_IDLE:
-            at86rf2xx_set_state(dev, AT86RF2XX_STATE_RX_AACK_ON);
+            //at86rf2xx_set_state(dev, AT86RF2XX_STATE_RX_AACK_ON);
+			at86rf2xx_set_state(dev, AT86RF215_STATE_RF_RX);
             break;
         case NETOPT_STATE_TX:
             if (dev->netdev.flags & AT86RF2XX_OPT_PRELOADING) {
@@ -230,9 +231,9 @@ static int _set_state(at86rf2xx_t *dev, netopt_state_t state)
 netopt_state_t _get_state(at86rf2xx_t *dev)
 {
     switch (at86rf2xx_get_status(dev)) {
-        case AT86RF2XX_STATE_SLEEP:
+        case AT86RF215_STATE_RF_SLEEP:
             return NETOPT_STATE_SLEEP;
-        case AT86RF2XX_STATE_TRX_OFF:
+        case AT86RF215_STATE_RF_TRXOFF:
             return NETOPT_STATE_STANDBY;
         case AT86RF2XX_STATE_BUSY_RX_AACK:
             return NETOPT_STATE_RX;
@@ -281,7 +282,7 @@ static int _get(netdev_t *netdev, netopt_t opt, void *val, size_t max_len)
             return sizeof(netopt_enable_t);
 
         case NETOPT_PROMISCUOUSMODE:
-            if (dev->netdev.flags & AT86RF2XX_OPT_PROMISCUOUS) {
+            if (dev->netdev.flags & AT86RF215_OPT_PROMISCUOUS) {
                 *((netopt_enable_t *)val) = NETOPT_ENABLE;
             }
             else {
@@ -337,7 +338,7 @@ static int _get(netdev_t *netdev, netopt_t opt, void *val, size_t max_len)
     uint8_t old_state = at86rf2xx_get_status(dev);
 
     /* temporarily wake up if sleeping */
-    if (old_state == AT86RF2XX_STATE_SLEEP) {
+    if (old_state == AT86RF215_STATE_RF_SLEEP) {
         at86rf2xx_assert_awake(dev);
     }
 
@@ -381,8 +382,8 @@ static int _get(netdev_t *netdev, netopt_t opt, void *val, size_t max_len)
 
         case NETOPT_AUTOACK:
             assert(max_len >= sizeof(netopt_enable_t));
-            uint8_t tmp = at86rf215_reg_read(dev, AT86RF2XX_REG__CSMA_SEED_1);
-            *((netopt_enable_t *)val) = (tmp & AT86RF2XX_CSMA_SEED_1__AACK_DIS_ACK) ? false : true;
+            uint8_t tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_AMCS);
+            *((netopt_enable_t *)val) = (tmp & AT86RF215_AACK_ENABLE) ? true : false;
             res = sizeof(netopt_enable_t);
             break;
 
@@ -392,8 +393,8 @@ static int _get(netdev_t *netdev, netopt_t opt, void *val, size_t max_len)
     }
 
     /* go back to sleep if were sleeping */
-    if (old_state == AT86RF2XX_STATE_SLEEP) {
-        at86rf2xx_set_state(dev, AT86RF2XX_STATE_SLEEP);
+    if (old_state == AT86RF215_STATE_RF_SLEEP) {
+        at86rf2xx_set_state(dev, AT86RF215_STATE_RF_SLEEP);
     }
 
     return res;
@@ -413,24 +414,24 @@ static int _set(netdev_t *netdev, netopt_t opt, const void *val, size_t len)
      * opt != NETOPT_STATE check prevents redundant wake-up.
      * when opt == NETOPT_STATE, at86rf2xx_set_state() will wake up the
      * radio if needed. */
-    if ((old_state == AT86RF2XX_STATE_SLEEP) && (opt != NETOPT_STATE)) {
+    if ((old_state == AT86RF215_STATE_RF_SLEEP) && (opt != NETOPT_STATE)) {
         at86rf2xx_assert_awake(dev);
     }
 
     switch (opt) {
         case NETOPT_ADDRESS:
             assert(len <= sizeof(uint16_t));
-            at86rf2xx_set_addr_short(dev, *((const uint16_t *)val));
+            at86rf215_set_addr_short(dev, *((const uint16_t *)val));
             /* don't set res to set netdev_ieee802154_t::short_addr */
             break;
         case NETOPT_ADDRESS_LONG:
             assert(len <= sizeof(uint64_t));
-            at86rf2xx_set_addr_long(dev, *((const uint64_t *)val));
+            at86rf215_set_addr_long(dev, *((const uint64_t *)val));
             /* don't set res to set netdev_ieee802154_t::long_addr */
             break;
         case NETOPT_NID:
             assert(len <= sizeof(uint16_t));
-            at86rf2xx_set_pan(dev, *((const uint16_t *)val));
+            at86rf215_set_pan(dev, *((const uint16_t *)val));
             /* don't set res to set netdev_ieee802154_t::pan */
             break;
         case NETOPT_CHANNEL:
@@ -444,7 +445,7 @@ static int _set(netdev_t *netdev, netopt_t opt, const void *val, size_t len)
                 res = -EINVAL;
                 break;
             }
-            at86rf2xx_set_chan(dev, chan);
+            at86rf215_set_chan(dev, chan);
             /* don't set res to set netdev_ieee802154_t::chan */
             break;
 
@@ -482,7 +483,7 @@ static int _set(netdev_t *netdev, netopt_t opt, const void *val, size_t len)
             break;
 
         case NETOPT_AUTOACK:
-            at86rf2xx_set_option(dev, AT86RF2XX_OPT_AUTOACK,
+            at86rf2xx_set_option(dev, AT86RF215_OPT_AUTOACK,
                                  ((const bool *)val)[0]);
             res = sizeof(netopt_enable_t);
             break;
@@ -506,7 +507,7 @@ static int _set(netdev_t *netdev, netopt_t opt, const void *val, size_t len)
             break;
 
         case NETOPT_PROMISCUOUSMODE:
-            at86rf2xx_set_option(dev, AT86RF2XX_OPT_PROMISCUOUS,
+            at86rf2xx_set_option(dev, AT86RF215_OPT_PROMISCUOUS,
                                  ((const bool *)val)[0]);
             res = sizeof(netopt_enable_t);
             break;
@@ -565,9 +566,9 @@ static int _set(netdev_t *netdev, netopt_t opt, const void *val, size_t len)
     }
 
     /* go back to sleep if were sleeping and state hasn't been changed */
-    if ((old_state == AT86RF2XX_STATE_SLEEP)
+    if ((old_state == AT86RF215_STATE_RF_SLEEP)
         && (opt != NETOPT_STATE)) {
-        at86rf2xx_set_state(dev, AT86RF2XX_STATE_SLEEP);
+        at86rf2xx_set_state(dev, AT86RF215_STATE_RF_SLEEP);
     }
 
     if (res == -ENOTSUP) {
@@ -588,7 +589,7 @@ static void _isr(netdev_t *netdev)
      * lost anyway, so return immediately.
      */
     state = at86rf2xx_get_status(dev);
-    if (state == AT86RF2XX_STATE_SLEEP) {
+    if (state == AT86RF215_STATE_RF_SLEEP) {
         return;
     }
 

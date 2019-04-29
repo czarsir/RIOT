@@ -148,7 +148,7 @@ void at86rf2xx_assert_awake(at86rf2xx_t *dev);
  *
  * @param[in,out] dev   device to reset
  */
-void at86rf2xx_hardware_reset(at86rf2xx_t *dev);
+void at86rf215_hardware_reset(at86rf2xx_t *dev);
 
 
 /**
@@ -156,7 +156,7 @@ void at86rf2xx_hardware_reset(at86rf2xx_t *dev);
  *
  * @param[in,out] dev   device to configure
  */
-void at86rf2xx_configure_phy(at86rf2xx_t *dev);
+void at86rf215_configure_phy(at86rf2xx_t *dev);
 
 #if defined(MODULE_AT86RF233) || defined(MODULE_AT86RF231) || defined(DOXYGEN)
 /**

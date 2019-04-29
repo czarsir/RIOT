@@ -87,8 +87,17 @@ extern "C" {
 #endif
 
 /****** RF state ******/
+#define AT86RF215_STATE_RF_SLEEP           (0x01)
 #define AT86RF215_STATE_RF_TRXOFF          (0x02)
+#define AT86RF215_STATE_RF_TXPREP          (0x03)
+#define AT86RF215_STATE_RF_TX              (0x04)
+#define AT86RF215_STATE_RF_RX              (0x05)
+#define AT86RF215_STATE_RF_TRANSITION      (0x06)
 #define AT86RF215_STATE_RF_RESET           (0x07)
+
+/****** RF command ******/
+#define AT86RF215_CMD_RF_NOP               (0x00)
+#define AT86RF215_CMD_RF_TRX_OFF           (0x02)
 
 /**
  * @name    Flags for device internal states (see datasheet)
@@ -97,16 +106,16 @@ extern "C" {
 #define AT86RF2XX_STATE_P_ON           (0x00)     /**< initial power on */
 #define AT86RF2XX_STATE_BUSY_RX        (0x01)     /**< busy receiving data (basic mode) */
 #define AT86RF2XX_STATE_BUSY_TX        (0x02)     /**< busy transmitting data (basic mode) */
-#define AT86RF2XX_STATE_FORCE_TRX_OFF  (0x03)     /**< force transition to idle */
+
 #define AT86RF2XX_STATE_RX_ON          (0x06)     /**< listen mode (basic mode) */
-#define AT86RF2XX_STATE_TRX_OFF        (0x08)     /**< idle */
+
 #define AT86RF2XX_STATE_PLL_ON         (0x09)     /**< ready to transmit */
 #define AT86RF2XX_STATE_SLEEP          (0x0f)     /**< sleep mode */
 #define AT86RF2XX_STATE_BUSY_RX_AACK   (0x11)     /**< busy receiving data (extended mode) */
 #define AT86RF2XX_STATE_BUSY_TX_ARET   (0x12)     /**< busy transmitting data (extended mode) */
 #define AT86RF2XX_STATE_RX_AACK_ON     (0x16)     /**< wait for incoming data */
 #define AT86RF2XX_STATE_TX_ARET_ON     (0x19)     /**< ready for sending data */
-#define AT86RF2XX_STATE_IN_PROGRESS    (0x1f)     /**< ongoing state conversion */
+
 /** @} */
 
 /**
@@ -119,11 +128,11 @@ extern "C" {
  */
 #define AT86RF2XX_OPT_SRC_ADDR_LONG  (NETDEV_IEEE802154_SRC_MODE_LONG)  /**< legacy define */
 #define AT86RF2XX_OPT_RAWDUMP        (NETDEV_IEEE802154_RAW)            /**< legacy define */
-#define AT86RF2XX_OPT_AUTOACK        (NETDEV_IEEE802154_ACK_REQ)        /**< legacy define */
+#define AT86RF215_OPT_AUTOACK        (NETDEV_IEEE802154_ACK_REQ)        /**< legacy define */
 #define AT86RF2XX_OPT_ACK_PENDING    (NETDEV_IEEE802154_FRAME_PEND)     /**< legacy define */
 
 #define AT86RF2XX_OPT_CSMA           (0x0100)       /**< CSMA active */
-#define AT86RF2XX_OPT_PROMISCUOUS    (0x0200)       /**< promiscuous mode
+#define AT86RF215_OPT_PROMISCUOUS    (0x0200)       /**< promiscuous mode
                                                      *   active */
 #define AT86RF2XX_OPT_PRELOADING     (0x0400)       /**< preloading enabled */
 #define AT86RF2XX_OPT_TELL_TX_START  (0x0800)       /**< notify MAC layer on TX
@@ -196,7 +205,7 @@ void at86rf215_reset(at86rf2xx_t *dev);
  *
  * @return                  the currently set (2-byte) short address
  */
-uint16_t at86rf2xx_get_addr_short(const at86rf2xx_t *dev);
+uint16_t at86rf215_get_addr_short(const at86rf2xx_t *dev);
 
 /**
  * @brief   Set the short address of the given device
@@ -204,7 +213,7 @@ uint16_t at86rf2xx_get_addr_short(const at86rf2xx_t *dev);
  * @param[in,out] dev       device to write to
  * @param[in] addr          (2-byte) short address to set
  */
-void at86rf2xx_set_addr_short(at86rf2xx_t *dev, uint16_t addr);
+void at86rf215_set_addr_short(at86rf2xx_t *dev, uint16_t addr);
 
 /**
  * @brief   Get the configured long address of the given device
@@ -213,7 +222,7 @@ void at86rf2xx_set_addr_short(at86rf2xx_t *dev, uint16_t addr);
  *
  * @return                  the currently set (8-byte) long address
  */
-uint64_t at86rf2xx_get_addr_long(const at86rf2xx_t *dev);
+uint64_t at86rf215_get_addr_long(const at86rf2xx_t *dev);
 
 /**
  * @brief   Set the long address of the given device
@@ -221,7 +230,7 @@ uint64_t at86rf2xx_get_addr_long(const at86rf2xx_t *dev);
  * @param[in,out] dev       device to write to
  * @param[in] addr          (8-byte) long address to set
  */
-void at86rf2xx_set_addr_long(at86rf2xx_t *dev, uint64_t addr);
+void at86rf215_set_addr_long(at86rf2xx_t *dev, uint64_t addr);
 
 /**
  * @brief   Get the configured channel number of the given device
@@ -230,7 +239,7 @@ void at86rf2xx_set_addr_long(at86rf2xx_t *dev, uint64_t addr);
  *
  * @return                  the currently set channel number
  */
-uint8_t at86rf2xx_get_chan(const at86rf2xx_t *dev);
+uint8_t at86rf215_get_chan(const at86rf2xx_t *dev);
 
 /**
  * @brief   Set the channel number of the given device
@@ -238,7 +247,7 @@ uint8_t at86rf2xx_get_chan(const at86rf2xx_t *dev);
  * @param[in,out] dev       device to write to
  * @param[in] chan          channel number to set
  */
-void at86rf2xx_set_chan(at86rf2xx_t *dev, uint8_t chan);
+void at86rf215_set_chan(at86rf2xx_t *dev, uint8_t chan);
 
 /**
  * @brief   Get the configured channel page of the given device
@@ -264,7 +273,7 @@ void at86rf2xx_set_page(at86rf2xx_t *dev, uint8_t page);
  *
  * @return                  the currently set PAN ID
  */
-uint16_t at86rf2xx_get_pan(const at86rf2xx_t *dev);
+uint16_t at86rf215_get_pan(const at86rf2xx_t *dev);
 
 /**
  * @brief   Set the PAN ID of the given device
@@ -272,7 +281,7 @@ uint16_t at86rf2xx_get_pan(const at86rf2xx_t *dev);
  * @param[in,out] dev       device to write to
  * @param[in] pan           PAN ID to set
  */
-void at86rf2xx_set_pan(at86rf2xx_t *dev, uint16_t pan);
+void at86rf215_set_pan(at86rf2xx_t *dev, uint16_t pan);
 
 /**
  * @brief   Get the configured transmission power of the given device [in dBm]

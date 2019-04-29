@@ -125,7 +125,7 @@ void at86rf2xx_assert_awake(at86rf2xx_t *dev)
     }
 }
 
-void at86rf2xx_hardware_reset(at86rf2xx_t *dev)
+void at86rf215_hardware_reset(at86rf2xx_t *dev)
 {
 	DEBUG("[rf215] -- -- hardware_reset\n");
 
@@ -142,15 +142,18 @@ void at86rf2xx_hardware_reset(at86rf2xx_t *dev)
 
     /* update state: if the radio state was P_ON (initialization phase),
      * it remains P_ON. Otherwise, it should go to TRX_OFF
+	 *
+	 * at86rf215: automatically end up in state TRXOFF.
      */
     do {
         dev->state = at86rf215_reg_read(dev, AT86RF215_REG__RF09_STATE)
                      & AT86RF215_RFn_STATE_MASK;
-    } while ((dev->state != AT86RF215_STATE_RF_TRXOFF)
-             && (dev->state != AT86RF215_STATE_RF_RESET));
+	} while (dev->state != AT86RF215_STATE_RF_TRXOFF);
+    //} while ((dev->state != AT86RF215_STATE_RF_TRXOFF)
+    //         && (dev->state != AT86RF215_STATE_RF_RESET));
 }
 
-void at86rf2xx_configure_phy(at86rf2xx_t *dev)
+void at86rf215_configure_phy(at86rf2xx_t *dev)
 {
     /* we must be in TRX_OFF before changing the PHY configuration */
     uint8_t prev_state = at86rf2xx_set_state(dev, AT86RF215_CMD_RF_TRX_OFF);
@@ -189,13 +192,17 @@ void at86rf2xx_configure_phy(at86rf2xx_t *dev)
     at86rf215_reg_write(dev, AT86RF2XX_REG__RF_CTRL_0, rf_ctrl0);
 #endif
 
-    uint8_t phy_cc_cca = at86rf215_reg_read(dev, AT86RF2XX_REG__PHY_CC_CCA);
-    /* Clear previous configuration for channel number */
-    phy_cc_cca &= ~(AT86RF2XX_PHY_CC_CCA_MASK__CHANNEL);
+//    uint8_t phy_cc_cca = at86rf215_reg_read(dev, AT86RF2XX_REG__PHY_CC_CCA);
+//    /* Clear previous configuration for channel number */
+//    phy_cc_cca &= ~(AT86RF2XX_PHY_CC_CCA_MASK__CHANNEL);
+//    /* Update the channel register */
+//    phy_cc_cca |= (dev->netdev.chan & AT86RF2XX_PHY_CC_CCA_MASK__CHANNEL);
+//    at86rf215_reg_write(dev, AT86RF2XX_REG__PHY_CC_CCA, phy_cc_cca);
 
-    /* Update the channel register */
-    phy_cc_cca |= (dev->netdev.chan & AT86RF2XX_PHY_CC_CCA_MASK__CHANNEL);
-    at86rf215_reg_write(dev, AT86RF2XX_REG__PHY_CC_CCA, phy_cc_cca);
+	/*** Channel ***/
+	at86rf215_reg_write(dev, AT86RF215_REG__RF09_CNL, dev->netdev.chan);
+	/*** channel scheme ***/
+	at86rf215_reg_write(dev, AT86RF215_REG__RF09_CNM, 0);
 
 #ifdef MODULE_AT86RF212B
     /* Update the TX power register to achieve the same power (in dBm) */

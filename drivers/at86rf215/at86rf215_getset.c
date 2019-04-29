@@ -73,12 +73,12 @@ static const uint8_t dbm_to_tx_pow[] = { 0x0f, 0x0f, 0x0f, 0x0e, 0x0e, 0x0e,
                                          0x05, 0x03, 0x00 };
 #endif
 
-uint16_t at86rf2xx_get_addr_short(const at86rf2xx_t *dev)
+uint16_t at86rf215_get_addr_short(const at86rf2xx_t *dev)
 {
-    return (dev->netdev.short_addr[0] << 8) | dev->netdev.short_addr[1];
+    return (dev->netdev.short_addr[1] << 8) | dev->netdev.short_addr[0];
 }
 
-void at86rf2xx_set_addr_short(at86rf2xx_t *dev, uint16_t addr)
+void at86rf215_set_addr_short(at86rf2xx_t *dev, uint16_t addr)
 {
     dev->netdev.short_addr[0] = (uint8_t)(addr);
     dev->netdev.short_addr[1] = (uint8_t)(addr >> 8);
@@ -87,13 +87,13 @@ void at86rf2xx_set_addr_short(at86rf2xx_t *dev, uint16_t addr)
      * 0 for unicast addresses */
     dev->netdev.short_addr[0] &= 0x7F;
 #endif
-    at86rf215_reg_write(dev, AT86RF2XX_REG__SHORT_ADDR_0,
+    at86rf215_reg_write(dev, AT86RF215_REG__IEEE_MACSHA0_1,
                         dev->netdev.short_addr[1]);
-    at86rf215_reg_write(dev, AT86RF2XX_REG__SHORT_ADDR_1,
+    at86rf215_reg_write(dev, AT86RF215_REG__IEEE_MACSHA0_0,
                         dev->netdev.short_addr[0]);
 }
 
-uint64_t at86rf2xx_get_addr_long(const at86rf2xx_t *dev)
+uint64_t at86rf215_get_addr_long(const at86rf2xx_t *dev)
 {
     uint64_t addr;
     uint8_t *ap = (uint8_t *)(&addr);
@@ -104,21 +104,21 @@ uint64_t at86rf2xx_get_addr_long(const at86rf2xx_t *dev)
     return addr;
 }
 
-void at86rf2xx_set_addr_long(at86rf2xx_t *dev, uint64_t addr)
+void at86rf215_set_addr_long(at86rf2xx_t *dev, uint64_t addr)
 {
     for (int i = 0; i < 8; i++) {
         dev->netdev.long_addr[i] = (uint8_t)(addr >> (i * 8));
-        at86rf215_reg_write(dev, (AT86RF2XX_REG__IEEE_ADDR_0 + i),
+        at86rf215_reg_write(dev, (AT86RF215_REG__IEEE_MACEA_0 + i),
                             (addr >> ((7 - i) * 8)));
     }
 }
 
-uint8_t at86rf2xx_get_chan(const at86rf2xx_t *dev)
+uint8_t at86rf215_get_chan(const at86rf2xx_t *dev)
 {
     return dev->netdev.chan;
 }
 
-void at86rf2xx_set_chan(at86rf2xx_t *dev, uint8_t channel)
+void at86rf215_set_chan(at86rf2xx_t *dev, uint8_t channel)
 {
     if ((channel > AT86RF2XX_MAX_CHANNEL) ||
 #if AT86RF2XX_MIN_CHANNEL /* is zero for sub-GHz */
@@ -130,7 +130,7 @@ void at86rf2xx_set_chan(at86rf2xx_t *dev, uint8_t channel)
 
     dev->netdev.chan = channel;
 
-    at86rf2xx_configure_phy(dev);
+    at86rf215_configure_phy(dev);
 }
 
 uint8_t at86rf2xx_get_page(const at86rf2xx_t *dev)
@@ -148,7 +148,7 @@ void at86rf2xx_set_page(at86rf2xx_t *dev, uint8_t page)
 #ifdef MODULE_AT86RF212B
     if ((page == 0) || (page == 2)) {
         dev->page = page;
-        at86rf2xx_configure_phy(dev);
+        at86rf215_configure_phy(dev);
     }
 #else
     (void) dev;
@@ -156,19 +156,19 @@ void at86rf2xx_set_page(at86rf2xx_t *dev, uint8_t page)
 #endif
 }
 
-uint16_t at86rf2xx_get_pan(const at86rf2xx_t *dev)
+uint16_t at86rf215_get_pan(const at86rf2xx_t *dev)
 {
     return dev->netdev.pan;
 }
 
-void at86rf2xx_set_pan(at86rf2xx_t *dev, uint16_t pan)
+void at86rf215_set_pan(at86rf2xx_t *dev, uint16_t pan)
 {
     le_uint16_t le_pan = byteorder_btols(byteorder_htons(pan));
 
     dev->netdev.pan = pan;
-    DEBUG("pan0: %u, pan1: %u\n", le_pan.u8[0], le_pan.u8[1]);
-    at86rf215_reg_write(dev, AT86RF2XX_REG__PAN_ID_0, le_pan.u8[0]);
-    at86rf215_reg_write(dev, AT86RF2XX_REG__PAN_ID_1, le_pan.u8[1]);
+    DEBUG("[rf215] pan0: %u, pan1: %u\n", le_pan.u8[0], le_pan.u8[1]);
+    at86rf215_reg_write(dev, AT86RF215_REG__IEEE_MACPID0_0, le_pan.u8[0]);
+    at86rf215_reg_write(dev, AT86RF215_REG__IEEE_MACPID0_1, le_pan.u8[1]);
 }
 
 int16_t at86rf2xx_get_txpower(const at86rf2xx_t *dev)
@@ -314,7 +314,7 @@ void at86rf2xx_set_option(at86rf2xx_t *dev, uint16_t option, bool state)
 {
     uint8_t tmp;
 
-    DEBUG("set option %i to %i\n", option, state);
+    DEBUG("[rf215] set option %i to %s\n", option, (state ? "true" : "false"));
 
     /* set option field */
     dev->netdev.flags = (state) ? (dev->netdev.flags |  option)
@@ -336,27 +336,27 @@ void at86rf2xx_set_option(at86rf2xx_t *dev, uint16_t option, bool state)
                 at86rf2xx_set_csma_max_retries(dev, -1);
             }
             break;
-        case AT86RF2XX_OPT_PROMISCUOUS:
-            DEBUG("[at86rf2xx] opt: %s PROMISCUOUS mode\n",
+        case AT86RF215_OPT_PROMISCUOUS:
+            DEBUG("[rf215] opt: %s PROMISCUOUS mode\n",
                   (state ? "enable" : "disable"));
             /* disable/enable auto ACKs in promiscuous mode */
-            tmp = at86rf215_reg_read(dev, AT86RF2XX_REG__CSMA_SEED_1);
-            tmp = (state) ? (tmp |  AT86RF2XX_CSMA_SEED_1__AACK_DIS_ACK)
-                          : (tmp & ~AT86RF2XX_CSMA_SEED_1__AACK_DIS_ACK);
-            at86rf215_reg_write(dev, AT86RF2XX_REG__CSMA_SEED_1, tmp);
+//            tmp = at86rf215_reg_read(dev, AT86RF2XX_REG__CSMA_SEED_1);
+//            tmp = (state) ? (tmp |  AT86RF2XX_CSMA_SEED_1__AACK_DIS_ACK)
+//                          : (tmp & ~AT86RF2XX_CSMA_SEED_1__AACK_DIS_ACK);
+//            at86rf215_reg_write(dev, AT86RF2XX_REG__CSMA_SEED_1, tmp);
             /* enable/disable promiscuous mode */
-            tmp = at86rf215_reg_read(dev, AT86RF2XX_REG__XAH_CTRL_1);
-            tmp = (state) ? (tmp |  AT86RF2XX_XAH_CTRL_1__AACK_PROM_MODE)
-                          : (tmp & ~AT86RF2XX_XAH_CTRL_1__AACK_PROM_MODE);
-            at86rf215_reg_write(dev, AT86RF2XX_REG__XAH_CTRL_1, tmp);
+            tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_AFC0);
+            tmp = (state) ? (tmp |  AT86RF215_PM_ENABLE)
+                          : (tmp & ~AT86RF215_PM_ENABLE);
+            at86rf215_reg_write(dev, AT86RF215_REG__BBC0_AFC0, tmp);
             break;
-        case AT86RF2XX_OPT_AUTOACK:
-            DEBUG("[at86rf2xx] opt: %s auto ACKs\n",
+        case AT86RF215_OPT_AUTOACK:
+            DEBUG("[rf215] opt: %s auto ACKs\n",
                   (state ? "enable" : "disable"));
-            tmp = at86rf215_reg_read(dev, AT86RF2XX_REG__CSMA_SEED_1);
-            tmp = (state) ? (tmp & ~AT86RF2XX_CSMA_SEED_1__AACK_DIS_ACK)
-                          : (tmp |  AT86RF2XX_CSMA_SEED_1__AACK_DIS_ACK);
-            at86rf215_reg_write(dev, AT86RF2XX_REG__CSMA_SEED_1, tmp);
+            tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_AMCS);
+            tmp = (state) ? (tmp |  AT86RF215_AACK_ENABLE)
+                          : (tmp & ~AT86RF215_AACK_ENABLE);
+            at86rf215_reg_write(dev, AT86RF215_REG__BBC0_AMCS, tmp);
             break;
         case AT86RF2XX_OPT_TELL_RX_START:
             DEBUG("[at86rf2xx] opt: %s SFD IRQ\n",
@@ -407,7 +407,7 @@ static inline void _set_state(at86rf2xx_t *dev, uint8_t state, uint8_t cmd)
      */
     else {
 		DEBUG("[rf215] -- -- -- set_state 2\n");
-        while (at86rf2xx_get_status(dev) == AT86RF2XX_STATE_IN_PROGRESS) {}
+        while (at86rf2xx_get_status(dev) == AT86RF215_STATE_RF_TRANSITION) {}
     }
 
     dev->state = state;
@@ -424,11 +424,11 @@ uint8_t at86rf2xx_set_state(at86rf2xx_t *dev, uint8_t state)
         old_state = at86rf2xx_get_status(dev);
     } while (old_state == AT86RF2XX_STATE_BUSY_RX_AACK ||
              old_state == AT86RF2XX_STATE_BUSY_TX_ARET ||
-             old_state == AT86RF2XX_STATE_IN_PROGRESS);
+             old_state == AT86RF215_STATE_RF_TRANSITION);
 
-    if (state == AT86RF2XX_STATE_FORCE_TRX_OFF) {
-		DEBUG("[rf215] -- -- set_state : FORCE_TRX_OFF\n");
-		_set_state(dev, AT86RF2XX_STATE_TRX_OFF, AT86RF215_CMD_RF_TRX_OFF);
+    if (state == AT86RF215_CMD_RF_TRX_OFF) {
+		DEBUG("[rf215] -- -- set_state : TRX_OFF\n");
+		_set_state(dev, AT86RF215_STATE_RF_TRXOFF, AT86RF215_CMD_RF_TRX_OFF);
         //_set_state(dev, AT86RF2XX_STATE_TRX_OFF, state);
     }
     else if (state != old_state) {
@@ -442,8 +442,8 @@ uint8_t at86rf2xx_set_state(at86rf2xx_t *dev, uint8_t state)
         /* check if we need to wake up from sleep mode */
         if (state == AT86RF2XX_STATE_SLEEP) {
             /* First go to TRX_OFF */
-            _set_state(dev, AT86RF2XX_STATE_TRX_OFF,
-                       AT86RF2XX_STATE_FORCE_TRX_OFF);
+            _set_state(dev, AT86RF215_STATE_RF_TRXOFF,
+                       AT86RF215_STATE_RF_TRXOFF);
             /* Discard all IRQ flags, framebuffer is lost anyway */
             at86rf215_reg_read(dev, AT86RF2XX_REG__IRQ_STATUS);
             /* Go to SLEEP mode from TRX_OFF */

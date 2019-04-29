@@ -23,7 +23,7 @@ void at86rf215_setup(at86rf2xx_t *dev, const at86rf2xx_params_t *params)
     netdev->driver = &at86rf2xx_driver;
     /* initialize device descriptor */
     memcpy(&dev->params, params, sizeof(at86rf2xx_params_t));
-    dev->idle_state = AT86RF2XX_STATE_TRX_OFF;
+    dev->idle_state = AT86RF215_STATE_RF_TRXOFF;
     /* radio state is P_ON when first powered-on */
     dev->state = AT86RF2XX_STATE_P_ON;
     dev->pending_tx = 0;
@@ -32,20 +32,21 @@ void at86rf215_setup(at86rf2xx_t *dev, const at86rf2xx_params_t *params)
 void at86rf215_reset(at86rf2xx_t *dev)
 {
     eui64_t addr_long;
+	uint8_t tmp;
 
 	DEBUG("[rf215] -- reset\n");
 
 	DEBUG("[rf215] -- reset : hardware reset\n");
-    at86rf2xx_hardware_reset(dev);
+    at86rf215_hardware_reset(dev);
 
 	DEBUG("[rf215] -- reset : ieee reset\n");
     netdev_ieee802154_reset(&dev->netdev);
 
     /* Reset state machine to ensure a known state */
-    if (dev->state == AT86RF2XX_STATE_P_ON) {
-		DEBUG("[rf215] -- reset : set state (TRX OFF)\n");
-        at86rf2xx_set_state(dev, AT86RF2XX_STATE_FORCE_TRX_OFF);
-    }
+    //if (dev->state == AT86RF2XX_STATE_P_ON) {
+	//	DEBUG("[rf215] -- reset : set state (TRX OFF)\n");
+    //    at86rf2xx_set_state(dev, AT86RF2XX_STATE_FORCE_TRX_OFF);
+    //}
 
 	DEBUG("[rf215] -- reset : set config\n");
     /* get an 8-byte unique ID to use as hardware address */
@@ -54,50 +55,51 @@ void at86rf215_reset(at86rf2xx_t *dev)
     addr_long.uint8[0] &= ~(0x01);
     addr_long.uint8[0] |=  (0x02);
     /* set short and long address */
-    at86rf2xx_set_addr_long(dev, ntohll(addr_long.uint64.u64));
-    at86rf2xx_set_addr_short(dev, ntohs(addr_long.uint16[0].u16));
+    at86rf215_set_addr_long(dev, ntohll(addr_long.uint64.u64));
+    at86rf215_set_addr_short(dev, ntohs(addr_long.uint16[0].u16));
 
     /* set default PAN id */
-    at86rf2xx_set_pan(dev, AT86RF2XX_DEFAULT_PANID);
+    at86rf215_set_pan(dev, AT86RF2XX_DEFAULT_PANID);
     /* set default channel */
-    at86rf2xx_set_chan(dev, AT86RF2XX_DEFAULT_CHANNEL);
+    at86rf215_set_chan(dev, AT86RF2XX_DEFAULT_CHANNEL);
     /* set default TX power */
     at86rf2xx_set_txpower(dev, AT86RF2XX_DEFAULT_TXPOWER);
     /* set default options */
-    at86rf2xx_set_option(dev, AT86RF2XX_OPT_AUTOACK, true);
-    at86rf2xx_set_option(dev, AT86RF2XX_OPT_CSMA, true);
+    at86rf2xx_set_option(dev, AT86RF215_OPT_AUTOACK, true);
+//    at86rf2xx_set_option(dev, AT86RF2XX_OPT_CSMA, true);
+
+	/*** Frame Filter ***/
+	/* using Promiscuous mode, easy for test. */
+	at86rf2xx_set_option(dev, AT86RF215_OPT_PROMISCUOUS, true);
 
     /* enable safe mode (protect RX FIFO until reading data starts) */
-    at86rf215_reg_write(dev, AT86RF2XX_REG__TRX_CTRL_2,
-                        AT86RF2XX_TRX_CTRL_2_MASK__RX_SAFE_MODE);
+//    at86rf215_reg_write(dev, AT86RF2XX_REG__TRX_CTRL_2,
+//                        AT86RF2XX_TRX_CTRL_2_MASK__RX_SAFE_MODE);
 #ifdef MODULE_AT86RF212B
     at86rf2xx_set_page(dev, AT86RF2XX_DEFAULT_PAGE);
 #endif
 
     /* don't populate masked interrupt flags to IRQ_STATUS register */
-    uint8_t tmp = at86rf215_reg_read(dev, AT86RF2XX_REG__TRX_CTRL_1);
-    tmp &= ~(AT86RF2XX_TRX_CTRL_1_MASK__IRQ_MASK_MODE);
-    at86rf215_reg_write(dev, AT86RF2XX_REG__TRX_CTRL_1, tmp);
+//    tmp = at86rf215_reg_read(dev, AT86RF2XX_REG__TRX_CTRL_1);
+//    tmp &= ~(AT86RF2XX_TRX_CTRL_1_MASK__IRQ_MASK_MODE);
+//    at86rf215_reg_write(dev, AT86RF2XX_REG__TRX_CTRL_1, tmp);
 
     /* disable clock output to save power */
     tmp = at86rf215_reg_read(dev, AT86RF2XX_REG__TRX_CTRL_0);
     tmp &= ~(AT86RF2XX_TRX_CTRL_0_MASK__CLKM_CTRL);
-    tmp &= ~(AT86RF2XX_TRX_CTRL_0_MASK__CLKM_SHA_SEL);
-    tmp |= (AT86RF2XX_TRX_CTRL_0_CLKM_CTRL__OFF);
-    at86rf215_reg_write(dev, AT86RF2XX_REG__TRX_CTRL_0, tmp);
+//    tmp &= ~(AT86RF2XX_TRX_CTRL_0_MASK__CLKM_SHA_SEL);
+//    tmp |= (AT86RF2XX_TRX_CTRL_0_CLKM_CTRL__OFF);
+//    at86rf215_reg_write(dev, AT86RF2XX_REG__TRX_CTRL_0, tmp);
 
     /* enable interrupts */
-    at86rf215_reg_write(dev, AT86RF2XX_REG__IRQ_MASK,
-                        AT86RF2XX_IRQ_STATUS_MASK__TRX_END);
+//    at86rf215_reg_write(dev, AT86RF2XX_REG__IRQ_MASK,
+//                        AT86RF2XX_IRQ_STATUS_MASK__TRX_END);
     /* clear interrupt flags */
-    at86rf215_reg_read(dev, AT86RF2XX_REG__IRQ_STATUS);
+//    at86rf215_reg_read(dev, AT86RF2XX_REG__IRQ_STATUS);
 
-	DEBUG("[rf215] -- reset : set state (RX AACK ON)\n");
-    /* go into RX state */
+	DEBUG("[rf215] -- reset : set state (TODO: stay TRXOFF)\n");
+    /* go into RX state ? or TXPREP ? or stay TRXOFF ? */
     //at86rf2xx_set_state(dev, AT86RF2XX_STATE_RX_AACK_ON);
-	tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_AMCS);
-	tmp |= AT86RF215_AACK_ENABLE;
-	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_AMCS, tmp);
 
     DEBUG("[rf215] -- reset : complete.\n");
 }
@@ -150,7 +152,7 @@ void at86rf2xx_tx_exec(const at86rf2xx_t *dev)
     at86rf2xx_sram_write(dev, 0, &(dev->tx_frame_len), 1);
     /* trigger sending of pre-loaded frame */
     at86rf215_reg_write(dev, AT86RF215_REG__RF09_CMD,
-                        AT86RF2XX_TRX_STATE__TX_START);
+                        AT86RF215_STATE_RF_TX);
     if (netdev->event_callback &&
         (dev->netdev.flags & AT86RF2XX_OPT_TELL_TX_START)) {
         netdev->event_callback(netdev, NETDEV_EVENT_TX_STARTED);
@@ -160,7 +162,7 @@ void at86rf2xx_tx_exec(const at86rf2xx_t *dev)
 bool at86rf2xx_cca(at86rf2xx_t *dev)
 {
     uint8_t reg;
-    uint8_t old_state = at86rf2xx_set_state(dev, AT86RF2XX_STATE_TRX_OFF);
+    uint8_t old_state = at86rf2xx_set_state(dev, AT86RF215_STATE_RF_TXPREP);
     /* Disable RX path */
     uint8_t rx_syn = at86rf215_reg_read(dev, AT86RF2XX_REG__RX_SYN);
 
@@ -181,7 +183,7 @@ bool at86rf2xx_cca(at86rf2xx_t *dev)
     /* re-enable RX */
     at86rf215_reg_write(dev, AT86RF2XX_REG__RX_SYN, rx_syn);
     /* Step back to the old state */
-    at86rf2xx_set_state(dev, AT86RF2XX_STATE_TRX_OFF);
+    at86rf2xx_set_state(dev, AT86RF215_STATE_RF_TXPREP);
     at86rf2xx_set_state(dev, old_state);
     return ret;
 }
