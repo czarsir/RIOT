@@ -128,33 +128,46 @@ static int _send(netdev_t *netdev, const iolist_t *iolist)
 static int _recv(netdev_t *netdev, void *buf, size_t len, void *info)
 {
     at86rf2xx_t *dev = (at86rf2xx_t *)netdev;
-    uint8_t phr;
+    //uint8_t phr;
     size_t pkt_len;
+	uint8_t tmpH;
+	uint8_t tmpL;
+
+	DEBUG("[rf215] recv \n");
+
+	/*** get size ***/
+	tmpH = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_RXFLH);
+	tmpL = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_RXFLL);
+	pkt_len = (((tmpH & 0x07)<<8) | tmpL) - 2;
+
+	DEBUG("[rf215] recv : pkt_len %u.\n", pkt_len);
 
     /* frame buffer protection will be unlocked as soon as at86rf2xx_fb_stop()
      * is called*/
-    at86rf2xx_fb_start(dev);
+    //at86rf2xx_fb_start(dev);
 
     /* get the size of the received packet */
-    at86rf2xx_fb_read(dev, &phr, 1);
+    //at86rf2xx_fb_read(dev, &phr, 1);
 
     /* ignore MSB (refer p.80) and substract length of FCS field */
-    pkt_len = (phr & 0x7f) - 2;
+    //pkt_len = (phr & 0x7f) - 2;
 
     /* just return length when buf == NULL */
     if (buf == NULL) {
-        at86rf2xx_fb_stop(dev);
+        //at86rf2xx_fb_stop(dev);
+		DEBUG("[rf215] recv : complete (length).\n");
         return pkt_len;
     }
     /* not enough space in buf */
     if (pkt_len > len) {
-        at86rf2xx_fb_stop(dev);
+        //at86rf2xx_fb_stop(dev);
         return -ENOBUFS;
     }
 #ifdef MODULE_NETSTATS_L2
     netdev->stats.rx_count++;
     netdev->stats.rx_bytes += pkt_len;
 #endif
+	at86rf2xx_fb_start(dev);
     /* copy payload */
     at86rf2xx_fb_read(dev, (uint8_t *)buf, pkt_len);
 
@@ -181,6 +194,7 @@ static int _recv(netdev_t *netdev, void *buf, size_t len, void *info)
         at86rf2xx_fb_stop(dev);
     }
 
+	DEBUG("[rf215] recv : complete.\n");
     return pkt_len;
 }
 

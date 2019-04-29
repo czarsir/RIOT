@@ -53,6 +53,10 @@ extern "C" {
 /*** BBC0 ***/
 #define AT86RF215_REG__BBC0_IRQS                                (0x0002)
 #define AT86RF215_REG__BBC0_PC                                  (0x0301)
+/* RX Frame */
+#define AT86RF215_REG__BBC0_RXFLL                               (0x0304)
+#define AT86RF215_REG__BBC0_RXFLH                               (0x0305)
+/* TX Frame */
 #define AT86RF215_REG__BBC0_TXFLL                               (0x0306)
 #define AT86RF215_REG__BBC0_TXFLH                               (0x0307)
 #define AT86RF215_REG__BBC0_AFC0                                (0x0320)
@@ -63,6 +67,8 @@ extern "C" {
 #define AT86RF215_REG__IEEE_MACSHA0_0                           (0x032F)
 #define AT86RF215_REG__IEEE_MACSHA0_1                           (0x0330)
 #define AT86RF215_REG__BBC0_AMCS                                (0x0340)
+/* RX Frame Buffer */
+#define AT86RF215_REG__BBC0_FBRXS                               (0x2000)
 /* TX Frame Buffer */
 #define AT86RF215_REG__BBC0_FBTXS                               (0x2800)
 

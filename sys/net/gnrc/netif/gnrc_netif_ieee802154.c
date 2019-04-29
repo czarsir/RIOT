@@ -82,6 +82,8 @@ static gnrc_pktsnip_t *_recv(gnrc_netif_t *netif)
     gnrc_pktsnip_t *pkt = NULL;
     int bytes_expected = dev->driver->recv(dev, NULL, 0, NULL);
 
+	DEBUG("[ieee802154] recv : bytes %d\n", bytes_expected);
+
     if (bytes_expected >= (int)IEEE802154_MIN_FRAME_LEN) {
         int nread;
 
@@ -162,6 +164,7 @@ static gnrc_pktsnip_t *_recv(gnrc_netif_t *netif)
         dev->driver->recv(dev, NULL, bytes_expected, NULL);
     }
 
+	DEBUG("[ieee802154] recv : complete.\n");
     return pkt;
 }
 
