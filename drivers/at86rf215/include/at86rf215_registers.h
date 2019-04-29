@@ -52,6 +52,7 @@ extern "C" {
 
 /*** BBC0 ***/
 #define AT86RF215_REG__BBC0_IRQS                                (0x0002)
+#define AT86RF215_REG__BBC0_IRQM                                (0x0300)
 #define AT86RF215_REG__BBC0_PC                                  (0x0301)
 /* RX Frame */
 #define AT86RF215_REG__BBC0_RXFLL                               (0x0304)
@@ -131,6 +132,8 @@ extern "C" {
 /*** Mask ***/
 #define AT86RF215_RFn_STATE_MASK                                (0x07)
 #define AT86RF215_BBCn_IRQS__TXFE_M                             (0x10)
+#define AT86RF215_BBCn_IRQM__RXFE_M                             (0x02)
+#define AT86RF215_BBCn_IRQM__RXFS_M                             (0x01)
 
 
 /****** Control *************************************************************/

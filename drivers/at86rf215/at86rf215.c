@@ -92,10 +92,9 @@ void at86rf215_reset(at86rf2xx_t *dev)
 //    at86rf215_reg_write(dev, AT86RF2XX_REG__TRX_CTRL_0, tmp);
 
     /* enable interrupts */
-//    at86rf215_reg_write(dev, AT86RF2XX_REG__IRQ_MASK,
-//                        AT86RF2XX_IRQ_STATUS_MASK__TRX_END);
+	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_IRQM, AT86RF215_BBCn_IRQM__RXFE_M);
     /* clear interrupt flags */
-//    at86rf215_reg_read(dev, AT86RF2XX_REG__IRQ_STATUS);
+	at86rf215_reg_read(dev, AT86RF215_REG__BBC0_IRQS);
 
 	DEBUG("[rf215] -- reset : set state (TODO: stay TRXOFF)\n");
     /* go into RX state ? or TXPREP ? or stay TRXOFF ? */

@@ -45,6 +45,9 @@ static void _irq_handler(void *arg)
 {
     netdev_t *dev = (netdev_t *) arg;
 
+	DEBUG("[rf215] irq_handler\n");
+	GPIOB->ODR ^= 1;
+
     if (dev->event_callback) {
         dev->event_callback(dev, NETDEV_EVENT_ISR);
     }
@@ -57,6 +60,7 @@ static int _init(netdev_t *netdev)
 	DEBUG("[rf215] init\n");
 
 	gpio_init(GPIO_PIN(PORT_B, 0), GPIO_OUT);
+	GPIOB->BSRR = 1;
 
     /* initialize GPIOs */
     spi_init_cs(dev->params.spi, dev->params.cs_pin);
