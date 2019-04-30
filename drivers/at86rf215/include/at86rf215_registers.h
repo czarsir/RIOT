@@ -44,6 +44,9 @@ extern "C" {
 /*** base ***/
 #define AT86RF215_REG__PART_NUM                                 (0x000D)
 
+/*** common ***/
+#define AT86RF215_REG__RF_IQIFC1                                (0x000B)
+
 /*** RF09 ***/
 #define AT86RF215_REG__RF09_STATE                               (0x0102)
 #define AT86RF215_REG__RF09_CMD                                 (0x0103)
@@ -146,7 +149,10 @@ extern "C" {
 /*** PC - PHY Control ***/
 /* Frame Check Sequence Filter Enable (default 0x1 enabled) */
 #define AT86RF215_FCSFE_ENABLE                                  (0x40)
+#define AT86RF215_FCST                                          (0x08) // 0: 32-bit, 1: 16-bit.
 #define AT86RF215_BBEN_ENABLE                                   (0x04)
+/* PHY Type */
+#define AT86RF215_PT_M                                          (0x03)
 
 /*** Frame Filter ***/
 /* Promiscuous mode */

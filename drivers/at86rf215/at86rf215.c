@@ -42,13 +42,11 @@ void at86rf215_reset(at86rf2xx_t *dev)
 	DEBUG("[rf215] -- reset : ieee reset\n");
     netdev_ieee802154_reset(&dev->netdev);
 
-    /* Reset state machine to ensure a known state */
-    //if (dev->state == AT86RF2XX_STATE_P_ON) {
-	//	DEBUG("[rf215] -- reset : set state (TRX OFF)\n");
-    //    at86rf2xx_set_state(dev, AT86RF2XX_STATE_FORCE_TRX_OFF);
-    //}
 
 	DEBUG("[rf215] -- reset : set config\n");
+
+	/********* IEEE *********/
+	/*** MAC ***/
     /* get an 8-byte unique ID to use as hardware address */
     luid_get(addr_long.uint8, IEEE802154_LONG_ADDRESS_LEN);
     /* make sure we mark the address as non-multicast and not globally unique */
@@ -57,45 +55,60 @@ void at86rf215_reset(at86rf2xx_t *dev)
     /* set short and long address */
     at86rf215_set_addr_long(dev, ntohll(addr_long.uint64.u64));
     at86rf215_set_addr_short(dev, ntohs(addr_long.uint16[0].u16));
-
-    /* set default PAN id */
+    /*** set default PAN id ***/
     at86rf215_set_pan(dev, AT86RF2XX_DEFAULT_PANID);
+
+
+	/********* Operating Modes *********/
+	/* baseband mode (default) */
+	//at86rf215_reg_write(dev, AT86RF215_REG__RF_IQIFC1, tmp);
+
+
+	/********* Analog *********/
+	/*** Channel Configuration ***/
     /* set default channel */
     at86rf215_set_chan(dev, AT86RF2XX_DEFAULT_CHANNEL);
-    /* set default TX power */
-    at86rf2xx_set_txpower(dev, AT86RF2XX_DEFAULT_TXPOWER);
-    /* set default options */
-    at86rf2xx_set_option(dev, AT86RF215_OPT_AUTOACK, true);
-//    at86rf2xx_set_option(dev, AT86RF2XX_OPT_CSMA, true);
+	/*** Transmitter Frontend ***/
+    /* TX power (default: maximum 31) */
+	//at86rf2xx_set_txpower(dev, AT86RF2XX_DEFAULT_TXPOWER);
+	/*** Receiver Frontend ***/
+	/* Energy Measurement */
+	/* Automatic Gain Control (AGC) */
 
+
+	/********* Baseband Configuration *********/
+	/* PHY Control */
+	tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_PC);
+	tmp &= ~(AT86RF215_FCSFE_ENABLE); // 0: disable. // easy to test for now.
+	tmp |= AT86RF215_FCST; // 1: 16-bit.
+	tmp &= ~(AT86RF215_PT_M);
+	tmp |= 0x1; // 1: MR-FSK, 2: MR-OFDM, 3: MR-O-QPSK.
+	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_PC, tmp);
+
+    /********* Options *********/
+	/*** Auto Mode ***/
+    //at86rf2xx_set_option(dev, AT86RF215_OPT_AUTOACK, true);
+	//at86rf2xx_set_option(dev, AT86RF2XX_OPT_CSMA, true);
 	/*** Frame Filter ***/
 	/* using Promiscuous mode, easy for test. */
 	at86rf2xx_set_option(dev, AT86RF215_OPT_PROMISCUOUS, true);
-
     /* enable safe mode (protect RX FIFO until reading data starts) */
-//    at86rf215_reg_write(dev, AT86RF2XX_REG__TRX_CTRL_2,
-//                        AT86RF2XX_TRX_CTRL_2_MASK__RX_SAFE_MODE);
-#ifdef MODULE_AT86RF212B
-    at86rf2xx_set_page(dev, AT86RF2XX_DEFAULT_PAGE);
-#endif
-
-    /* don't populate masked interrupt flags to IRQ_STATUS register */
-//    tmp = at86rf215_reg_read(dev, AT86RF2XX_REG__TRX_CTRL_1);
-//    tmp &= ~(AT86RF2XX_TRX_CTRL_1_MASK__IRQ_MASK_MODE);
-//    at86rf215_reg_write(dev, AT86RF2XX_REG__TRX_CTRL_1, tmp);
-
+	//at86rf215_reg_write(dev, AT86RF2XX_REG__TRX_CTRL_2, AT86RF2XX_TRX_CTRL_2_MASK__RX_SAFE_MODE);
     /* disable clock output to save power */
-    tmp = at86rf215_reg_read(dev, AT86RF2XX_REG__TRX_CTRL_0);
-    tmp &= ~(AT86RF2XX_TRX_CTRL_0_MASK__CLKM_CTRL);
+//    tmp = at86rf215_reg_read(dev, AT86RF2XX_REG__TRX_CTRL_0);
+//    tmp &= ~(AT86RF2XX_TRX_CTRL_0_MASK__CLKM_CTRL);
 //    tmp &= ~(AT86RF2XX_TRX_CTRL_0_MASK__CLKM_SHA_SEL);
 //    tmp |= (AT86RF2XX_TRX_CTRL_0_CLKM_CTRL__OFF);
 //    at86rf215_reg_write(dev, AT86RF2XX_REG__TRX_CTRL_0, tmp);
 
-    /* enable interrupts */
+
+    /********* Interrupts *********/
+	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_IRQM, AT86RF215_BBCn_IRQM__RXFS_M);
 	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_IRQM, AT86RF215_BBCn_IRQM__RXFE_M);
-    /* clear interrupt flags */
+	/* clear interrupt flags */
 	at86rf215_reg_read(dev, AT86RF215_REG__BBC0_IRQS);
 
+	/********* State Machine *********/
 	DEBUG("[rf215] -- reset : set state (TODO: stay TRXOFF)\n");
     /* go into RX state ? or TXPREP ? or stay TRXOFF ? */
     //at86rf2xx_set_state(dev, AT86RF2XX_STATE_RX_AACK_ON);
@@ -120,19 +133,22 @@ void at86rf2xx_tx_prepare(at86rf2xx_t *dev)
 {
 //    uint8_t state;
 
-	DEBUG("[rf215] -- tx_prepare \n");
+	//DEBUG("[rf215] -- tx_prepare \n");
 
     dev->pending_tx++;
-	DEBUG("[rf215] -- tx_prepare : set state (TX ARET ON)\n");
+	//DEBUG("[rf215] -- tx_prepare : set state (TX ARET ON)\n");
     //state = at86rf2xx_set_state(dev, AT86RF2XX_STATE_TX_ARET_ON);
-	uint8_t tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_AMCS);
-	tmp |= AT86RF215_CCATX_ENABLE;
-	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_AMCS, tmp);
+
+	/*** CCATX enable ***/
+	//uint8_t tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_AMCS);
+	//tmp |= AT86RF215_CCATX_ENABLE;
+	//at86rf215_reg_write(dev, AT86RF215_REG__BBC0_AMCS, tmp);
+
 //    if (state != AT86RF2XX_STATE_TX_ARET_ON) {
 //        dev->idle_state = state;
 //    }
     dev->tx_frame_len = IEEE802154_FCS_LEN;
-	DEBUG("[rf215] -- tx_prepare : complete.\n");
+	//DEBUG("[rf215] -- tx_prepare : complete.\n");
 }
 
 size_t at86rf2xx_tx_load(at86rf2xx_t *dev, const uint8_t *data,
@@ -152,9 +168,16 @@ void at86rf2xx_tx_exec(const at86rf2xx_t *dev)
     //at86rf2xx_sram_write(dev, 0, &(dev->tx_frame_len), 1);
 	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_TXFLH, 0);
 	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_TXFLL, dev->tx_frame_len);
+
     /* trigger sending of pre-loaded frame */
-    at86rf215_reg_write(dev, AT86RF215_REG__RF09_CMD,
-                        AT86RF215_STATE_RF_TX);
+	DEBUG("[rf215] -- tx_exec : set state (TXPREP)\n");
+	at86rf215_reg_write(dev, AT86RF215_REG__RF09_CMD, AT86RF215_STATE_RF_TXPREP);
+	do {
+		tmp = at86rf215_reg_read(dev, AT86RF215_REG__RF09_STATE)
+				& AT86RF215_RFn_STATE_MASK;
+	} while ( tmp != AT86RF215_STATE_RF_TXPREP );
+	DEBUG("[rf215] -- tx_exec : set state (TX)\n");
+    at86rf215_reg_write(dev, AT86RF215_REG__RF09_CMD, AT86RF215_STATE_RF_TX);
     if (netdev->event_callback &&
         (dev->netdev.flags & AT86RF2XX_OPT_TELL_TX_START)) {
         netdev->event_callback(netdev, NETDEV_EVENT_TX_STARTED);
