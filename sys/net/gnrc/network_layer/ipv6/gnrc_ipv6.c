@@ -300,7 +300,7 @@ static void *_event_loop(void *args)
             case GNRC_IPV6_NIB_DAD:
             case GNRC_IPV6_NIB_VALID_ADDR:
                 DEBUG("ipv6: NIB timer event received\n");
-                gnrc_ipv6_nib_handle_timer_event(msg.content.ptr, msg.type);
+                //gnrc_ipv6_nib_handle_timer_event(msg.content.ptr, msg.type);
                 break;
             default:
                 break;
