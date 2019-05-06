@@ -15,6 +15,11 @@
 #define ENABLE_DEBUG (1)
 #include "debug.h"
 
+/****** Functions ******/
+extern void at86rf215_set_tx_frontend(at86rf2xx_t *dev);
+extern void at86rf215_set_rx_frontend(at86rf2xx_t *dev);
+extern void at86rf215_set_bbc(at86rf2xx_t *dev);
+
 
 void at86rf215_setup(at86rf2xx_t *dev, const at86rf2xx_params_t *params)
 {
@@ -64,19 +69,22 @@ void at86rf215_reset(at86rf2xx_t *dev)
 	//at86rf215_reg_write(dev, AT86RF215_REG__RF_IQIFC1, tmp);
 
 
-	/********* Analog *********/
+	/********* Analog & Digital Frontend *********/
 	/*** Channel Configuration ***/
     /* set default channel */
     at86rf215_set_chan(dev, AT86RF2XX_DEFAULT_CHANNEL);
 	/*** Transmitter Frontend ***/
+	at86rf215_set_tx_frontend(dev);
     /* TX power (default: maximum 31) */
-	//at86rf2xx_set_txpower(dev, AT86RF2XX_DEFAULT_TXPOWER);
+	at86rf215_set_txpower(dev, AT86RF2XX_DEFAULT_TXPOWER); // set to max internally.
 	/*** Receiver Frontend ***/
+	at86rf215_set_rx_frontend(dev);
 	/* Energy Measurement */
 	/* Automatic Gain Control (AGC) */
 
 
 	/********* Baseband Configuration *********/
+	at86rf215_set_bbc(dev);
 	/* PHY Control */
 	tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_PC);
 	tmp &= ~(AT86RF215_FCSFE_ENABLE); // 0: disable. // easy to test for now.
@@ -104,7 +112,7 @@ void at86rf215_reset(at86rf2xx_t *dev)
 
     /********* Interrupts *********/
 	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_IRQM, AT86RF215_BBCn_IRQM__RXFS_M);
-	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_IRQM, AT86RF215_BBCn_IRQM__RXFE_M);
+	//at86rf215_reg_write(dev, AT86RF215_REG__BBC0_IRQM, AT86RF215_BBCn_IRQM__RXFE_M);
 	/* clear interrupt flags */
 	at86rf215_reg_read(dev, AT86RF215_REG__BBC0_IRQS);
 

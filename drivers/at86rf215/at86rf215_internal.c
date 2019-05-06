@@ -169,39 +169,9 @@ void at86rf215_configure_phy(at86rf2xx_t *dev)
     /* we must be in TRX_OFF before changing the PHY configuration */
     uint8_t prev_state = at86rf2xx_set_state(dev, AT86RF215_CMD_RF_TRX_OFF);
 
-#ifdef MODULE_AT86RF212B
     /* The TX power register must be updated after changing the channel if
      * moving between bands. */
-    int16_t txpower = at86rf2xx_get_txpower(dev);
-
-    uint8_t trx_ctrl2 = at86rf215_reg_read(dev, AT86RF2XX_REG__TRX_CTRL_2);
-    uint8_t rf_ctrl0 = at86rf215_reg_read(dev, AT86RF2XX_REG__RF_CTRL_0);
-
-    /* Clear previous configuration for PHY mode */
-    trx_ctrl2 &= ~(AT86RF2XX_TRX_CTRL_2_MASK__FREQ_MODE);
-    /* Clear previous configuration for GC_TX_OFFS */
-    rf_ctrl0 &= ~AT86RF2XX_RF_CTRL_0_MASK__GC_TX_OFFS;
-
-    if (dev->netdev.chan != 0) {
-        /* Set sub mode bit on 915 MHz as recommended by the data sheet */
-        trx_ctrl2 |= AT86RF2XX_TRX_CTRL_2_MASK__SUB_MODE;
-    }
-
-    if (dev->page == 0) {
-        /* BPSK coding */
-        /* Data sheet recommends using a +2 dB setting for BPSK */
-        rf_ctrl0 |= AT86RF2XX_RF_CTRL_0_GC_TX_OFFS__2DB;
-    }
-    else if (dev->page == 2) {
-        /* O-QPSK coding */
-        trx_ctrl2 |= AT86RF2XX_TRX_CTRL_2_MASK__BPSK_OQPSK;
-        /* Data sheet recommends using a +1 dB setting for O-QPSK */
-        rf_ctrl0 |= AT86RF2XX_RF_CTRL_0_GC_TX_OFFS__1DB;
-    }
-
-    at86rf215_reg_write(dev, AT86RF2XX_REG__TRX_CTRL_2, trx_ctrl2);
-    at86rf215_reg_write(dev, AT86RF2XX_REG__RF_CTRL_0, rf_ctrl0);
-#endif
+	// TODO
 
 //    uint8_t phy_cc_cca = at86rf215_reg_read(dev, AT86RF2XX_REG__PHY_CC_CCA);
 //    /* Clear previous configuration for channel number */
@@ -211,14 +181,15 @@ void at86rf215_configure_phy(at86rf2xx_t *dev)
 //    at86rf215_reg_write(dev, AT86RF2XX_REG__PHY_CC_CCA, phy_cc_cca);
 
 	/*** Channel ***/
+	at86rf215_reg_write(dev, AT86RF215_REG__RF09_CS, 0x30);
+	at86rf215_reg_write(dev, AT86RF215_REG__RF09_CCF0L, 0xF1);
+	at86rf215_reg_write(dev, AT86RF215_REG__RF09_CCF0H, 0x86);
 	at86rf215_reg_write(dev, AT86RF215_REG__RF09_CNL, dev->netdev.chan);
 	/*** channel scheme ***/
 	at86rf215_reg_write(dev, AT86RF215_REG__RF09_CNM, 0);
 
-#ifdef MODULE_AT86RF212B
     /* Update the TX power register to achieve the same power (in dBm) */
-    at86rf2xx_set_txpower(dev, txpower);
-#endif
+	// TODO
 
     /* Return to the state we had before reconfiguring */
     at86rf2xx_set_state(dev, prev_state);

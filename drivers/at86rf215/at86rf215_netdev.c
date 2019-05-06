@@ -365,7 +365,7 @@ static int _get(netdev_t *netdev, netopt_t opt, void *val, size_t max_len)
     switch (opt) {
         case NETOPT_TX_POWER:
             assert(max_len >= sizeof(int16_t));
-            *((uint16_t *)val) = at86rf2xx_get_txpower(dev);
+            *((uint16_t *)val) = at86rf215_get_txpower(dev);
             res = sizeof(uint16_t);
             break;
 
@@ -492,7 +492,7 @@ static int _set(netdev_t *netdev, netopt_t opt, const void *val, size_t len)
 
         case NETOPT_TX_POWER:
             assert(len <= sizeof(int16_t));
-            at86rf2xx_set_txpower(dev, *((const int16_t *)val));
+            at86rf215_set_txpower(dev, *((const int16_t *)val));
             res = sizeof(uint16_t);
             break;
 

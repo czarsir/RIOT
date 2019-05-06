@@ -290,7 +290,7 @@ void at86rf215_set_pan(at86rf2xx_t *dev, uint16_t pan);
  *
  * @return                  configured transmission power in dBm
  */
-int16_t at86rf2xx_get_txpower(const at86rf2xx_t *dev);
+int16_t at86rf215_get_txpower(const at86rf2xx_t *dev);
 
 /**
  * @brief   Set the transmission power of the given device [in dBm]
@@ -303,7 +303,7 @@ int16_t at86rf2xx_get_txpower(const at86rf2xx_t *dev);
  * @param[in] dev           device to write to
  * @param[in] txpower       transmission power in dBm
  */
-void at86rf2xx_set_txpower(const at86rf2xx_t *dev, int16_t txpower);
+void at86rf215_set_txpower(const at86rf2xx_t *dev, int16_t txpower);
 
 /**
  * @brief   Get the maximum number of retransmissions
