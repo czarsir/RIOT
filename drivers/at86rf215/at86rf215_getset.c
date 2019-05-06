@@ -301,6 +301,7 @@ void at86rf215_set_tx_frontend(at86rf2xx_t *dev)
 	/*** digital frontend ***/
 	/* RCUT | DM: Direct Modulation | SR: TX Sample Rate */
 	tmp = at86rf215_reg_read(dev, AT86RF215_REG__RF09_TXDFE);
+	tmp = 0;
 	tmp = (0x4 << 5) | (0x1 << 4) | (0x1);
 	at86rf215_reg_write(dev, AT86RF215_REG__RF09_TXDFE, tmp);
 
@@ -309,7 +310,9 @@ void at86rf215_set_tx_frontend(at86rf2xx_t *dev)
 	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_FSKDM, tmp);
 
 	/*** analog frontend ***/
+	/* PARAMP | - | LPFCUT */
 	tmp = at86rf215_reg_read(dev, AT86RF215_REG__RF09_TXCUTC);
+	tmp = 0;
 	tmp = (0x1 << 6) | (0x9);
 	at86rf215_reg_write(dev, AT86RF215_REG__RF09_TXCUTC, tmp);
 }
@@ -325,12 +328,18 @@ void at86rf215_set_rx_frontend(at86rf2xx_t *dev)
 	/*** digital frontend ***/
 	/* RCUT | - | SR: RX Sample Rate */
 	tmp = at86rf215_reg_read(dev, AT86RF215_REG__RF09_RXDFE);
-	tmp = (0x1 << 5) | (0x1);
+	tmp = 0;
+	tmp = (0x1 << 5) | (0x2);
 	at86rf215_reg_write(dev, AT86RF215_REG__RF09_RXDFE, tmp);
 
 	/*** AGC ***/
 	tmp = 0x0; // 0x1: enable.
 	at86rf215_reg_write(dev, AT86RF215_REG__RF09_AGCC, tmp);
+	/* target level */
+	tmp = at86rf215_reg_read(dev, AT86RF215_REG__RF09_AGCS);
+	tmp &= ~(AT86RF215_RFn_AGC_TGT_M);
+	tmp |= (0x1 << 5);
+	at86rf215_reg_write(dev, AT86RF215_REG__RF09_AGCS, tmp);
 
 	/*** EDC ***/
 	tmp = 0x3; // 0x3: disable.
@@ -341,9 +350,42 @@ void at86rf215_set_bbc(at86rf2xx_t *dev)
 {
 	uint8_t tmp;
 
-	/*** [FSK] Symbol Rate ***/
+	/********* [FSK] *********/
+
+	/*** [FSKC0] Index and Modulation ***/
+	/* BT | MIDXS | MIDX | MOD */
+	/* use default (index=1, mod=2FSK) */
+	//tmp = ;
+	//at86rf215_reg_write(dev, AT86RF215_REG__BBC0_FSKC0, tmp);
+
+	/*** [FSKC1] Symbol Rate ***/
+	/* FSKPLH: FSK Preamble Length High Byte | FI | - | SRATE */
 	tmp = 0x5; // 0x5: 400 kHz.
 	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_FSKC1, tmp);
+
+	/*** [FSKC2] ***/
+	tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_FSKC2);
+	/* Receiver Override */
+	tmp &= ~(AT86RF215_BBCn_FSK__RXO_M);
+	tmp |= (0x3 << 5); // 0x3: disable.
+	/* Preamble Time Out */
+	tmp &= ~(AT86RF215_BBCn_FSK__RXPTO_M);
+	tmp |= (0x1 << 4); // 0x1: enable.
+	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_FSKC2, tmp);
+
+	/*** FSK Preamble ***/
+	/* Length Low Byte */
+	tmp = 0xa; // default: 0x8; // for 400kHz: 0xa.
+	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_FSKPLL, tmp);
+	/* preamble detector sensitivity */
+//	tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_FSKC3);
+//	tmp &= ~(AT86RF215_BBCn_FSK__PDT_M);
+//	tmp |= (0x5); // default: 0x5.
+//	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_FSKC3, tmp);
+
+	/*** SFD | DW ***/
+	tmp = (0x0 << 3) | (0x1 << 2); // SFD0 // DW: enable.
+	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_FSKPHRTX, tmp);
 }
 
 /**

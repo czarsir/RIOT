@@ -43,8 +43,10 @@ extern "C" {
 
 /*** base ***/
 #define AT86RF215_REG__PART_NUM                                 (0x000D)
+#define AT86RF215_REG__VERSION                                  (0x000E)
 
 /*** common ***/
+#define AT86RF215_REG__RF_CLKO                                  (0x0007)
 #define AT86RF215_REG__RF_IQIFC1                                (0x000B)
 
 /*** RF09 ***/
@@ -60,6 +62,7 @@ extern "C" {
 #define AT86RF215_REG__RF09_RXBWC                               (0x0109)
 #define AT86RF215_REG__RF09_RXDFE                               (0x010A)
 #define AT86RF215_REG__RF09_AGCC                                (0x010B)
+#define AT86RF215_REG__RF09_AGCS                                (0x010C)
 #define AT86RF215_REG__RF09_EDC                                 (0x010E)
 /* TX */
 #define AT86RF215_REG__RF09_TXCUTC                              (0x0112)
@@ -87,7 +90,12 @@ extern "C" {
 /* Auto Mode */
 #define AT86RF215_REG__BBC0_AMCS                                (0x0340)
 /* FSK */
+#define AT86RF215_REG__BBC0_FSKC0                               (0x0360)
 #define AT86RF215_REG__BBC0_FSKC1                               (0x0361)
+#define AT86RF215_REG__BBC0_FSKC2                               (0x0362)
+#define AT86RF215_REG__BBC0_FSKC3                               (0x0363)
+#define AT86RF215_REG__BBC0_FSKPLL                              (0x0365)
+#define AT86RF215_REG__BBC0_FSKPHRTX                            (0x036A)
 #define AT86RF215_REG__BBC0_FSKDM                               (0x0372)
 /* RX Frame Buffer */
 #define AT86RF215_REG__BBC0_FBRXS                               (0x2000)
@@ -153,9 +161,15 @@ extern "C" {
 /*** Mask ***/
 #define AT86RF215_RFn_STATE_MASK                                (0x07)
 #define AT86RF215_RFn_TX_PWR_MASK                               (0x1F)
+#define AT86RF215_RFn_AGC_TGT_M                                 (0xE0)
 #define AT86RF215_BBCn_IRQS__TXFE_M                             (0x10)
+#define AT86RF215_BBCn_IRQS__RXFS_M                             (0x01)
 #define AT86RF215_BBCn_IRQM__RXFE_M                             (0x02)
 #define AT86RF215_BBCn_IRQM__RXFS_M                             (0x01)
+/* FSK */
+#define AT86RF215_BBCn_FSK__PDT_M                               (0x0F)
+#define AT86RF215_BBCn_FSK__RXO_M                               (0x60)
+#define AT86RF215_BBCn_FSK__RXPTO_M                             (0x10)
 
 
 /****** Control *************************************************************/

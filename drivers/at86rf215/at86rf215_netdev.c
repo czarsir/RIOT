@@ -43,14 +43,27 @@ const netdev_driver_t at86rf2xx_driver = {
 
 static void _irq_handler(void *arg)
 {
-    netdev_t *dev = (netdev_t *) arg;
+//    netdev_t *dev = (netdev_t *) arg;
+	at86rf2xx_t *dd = (at86rf2xx_t *) arg;
 
-	DEBUG("[rf215] irq_handler\n");
+	//DEBUG("[rf215] irq_handler\n");
+	puts("[rf215] irq_handler\n");
 	GPIOB->ODR ^= 1;
+	uint8_t tmp = at86rf215_reg_read(dd, AT86RF215_REG__BBC0_IRQS);
+	if(tmp & AT86RF215_BBCn_IRQS__RXFS_M) {
+		puts("[rf215] irq_handler : Rx start.\n");
+		LED1_TOGGLE;
+	} else {
+		puts("[rf215] irq_handler : others.\n");
+		LED2_TOGGLE;
+	}
 
-    if (dev->event_callback) {
-        dev->event_callback(dev, NETDEV_EVENT_ISR);
-    }
+	//at86rf2xx_set_state(dd, AT86RF215_STATE_RF_RX);
+	at86rf215_reg_write(dd, AT86RF215_REG__RF09_CMD, AT86RF215_STATE_RF_RX);
+
+//    if (dev->event_callback) {
+//        dev->event_callback(dev, NETDEV_EVENT_ISR);
+//    }
 }
 
 static int _init(netdev_t *netdev)
@@ -68,11 +81,14 @@ static int _init(netdev_t *netdev)
     gpio_clear(dev->params.sleep_pin);
     gpio_init(dev->params.reset_pin, GPIO_OUT);
     gpio_set(dev->params.reset_pin);
-    gpio_init_int(dev->params.int_pin, GPIO_IN, GPIO_RISING, _irq_handler, dev);
+    //gpio_init_int(dev->params.int_pin, GPIO_IN, GPIO_RISING, _irq_handler, dev);
+	gpio_init_int(GPIO_PIN(PORT_A, 0), GPIO_IN, GPIO_RISING, _irq_handler, dev);
 
 	/* test */
 	uint8_t temp = at86rf215_reg_read(dev, AT86RF215_REG__PART_NUM);
 	DEBUG("[rf215] init : part number 0x%x\n", temp);
+	temp = at86rf215_reg_read(dev, AT86RF215_REG__VERSION);
+	DEBUG("[rf215] init : version %u.\n", temp);
 
 	DEBUG("[rf215] init : reset\n");
     /* reset device to default values and put it into RX state */
@@ -600,9 +616,9 @@ static int _set(netdev_t *netdev, netopt_t opt, const void *val, size_t len)
 static void _isr(netdev_t *netdev)
 {
     at86rf2xx_t *dev = (at86rf2xx_t *) netdev;
-    uint8_t irq_mask;
+//    uint8_t irq_mask;
     uint8_t state;
-    uint8_t trac_status;
+//    uint8_t trac_status;
 
     /* If transceiver is sleeping register access is impossible and frames are
      * lost anyway, so return immediately.
@@ -613,74 +629,74 @@ static void _isr(netdev_t *netdev)
     }
 
     /* read (consume) device status */
-    irq_mask = at86rf215_reg_read(dev, AT86RF2XX_REG__IRQ_STATUS);
+//    irq_mask = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_IRQS);
 
-    trac_status = at86rf215_reg_read(dev, AT86RF215_REG__RF09_CMD)
-                  & AT86RF2XX_TRX_STATE_MASK__TRAC;
+//    trac_status = at86rf215_reg_read(dev, AT86RF215_REG__RF09_CMD)
+//                  & AT86RF2XX_TRX_STATE_MASK__TRAC;
 
-    if (irq_mask & AT86RF2XX_IRQ_STATUS_MASK__RX_START) {
-        netdev->event_callback(netdev, NETDEV_EVENT_RX_STARTED);
-        DEBUG("[at86rf2xx] EVT - RX_START\n");
-    }
+//    if (irq_mask & AT86RF2XX_IRQ_STATUS_MASK__RX_START) {
+//        netdev->event_callback(netdev, NETDEV_EVENT_RX_STARTED);
+//        DEBUG("[at86rf2xx] EVT - RX_START\n");
+//    }
 
-    if (irq_mask & AT86RF2XX_IRQ_STATUS_MASK__TRX_END) {
-        if ((state == AT86RF2XX_STATE_RX_AACK_ON)
-            || (state == AT86RF2XX_STATE_BUSY_RX_AACK)) {
-            DEBUG("[at86rf2xx] EVT - RX_END\n");
-            if (!(dev->netdev.flags & AT86RF2XX_OPT_TELL_RX_END)) {
-                return;
-            }
-            netdev->event_callback(netdev, NETDEV_EVENT_RX_COMPLETE);
-        }
-        else if ((state == AT86RF2XX_STATE_TX_ARET_ON)
-                 || (state == AT86RF2XX_STATE_BUSY_TX_ARET)) {
-            /* check for more pending TX calls and return to idle state if
-             * there are none */
-            assert(dev->pending_tx != 0);
-            if ((--dev->pending_tx) == 0) {
-                at86rf2xx_set_state(dev, dev->idle_state);
-                DEBUG("[at86rf2xx] return to idle state 0x%x\n", dev->idle_state);
-            }
-/* Only radios with the XAH_CTRL_2 register support frame retry reporting */
-#if AT86RF2XX_HAVE_RETRIES
-            dev->tx_retries = (at86rf215_reg_read(dev, AT86RF2XX_REG__XAH_CTRL_2)
-                               & AT86RF2XX_XAH_CTRL_2__ARET_FRAME_RETRIES_MASK) >>
-                              AT86RF2XX_XAH_CTRL_2__ARET_FRAME_RETRIES_OFFSET;
-#endif
-
-            DEBUG("[at86rf2xx] EVT - TX_END\n");
-
-            if (netdev->event_callback && (dev->netdev.flags & AT86RF2XX_OPT_TELL_TX_END)) {
-                switch (trac_status) {
-#ifdef MODULE_OPENTHREAD
-                    case AT86RF2XX_TRX_STATE__TRAC_SUCCESS:
-                        netdev->event_callback(netdev, NETDEV_EVENT_TX_COMPLETE);
-                        DEBUG("[at86rf2xx] TX SUCCESS\n");
-                        break;
-                    case AT86RF2XX_TRX_STATE__TRAC_SUCCESS_DATA_PENDING:
-                        netdev->event_callback(netdev, NETDEV_EVENT_TX_COMPLETE_DATA_PENDING);
-                        DEBUG("[at86rf2xx] TX SUCCESS DATA PENDING\n");
-                        break;
-#else
-                    case AT86RF2XX_TRX_STATE__TRAC_SUCCESS:
-                    case AT86RF2XX_TRX_STATE__TRAC_SUCCESS_DATA_PENDING:
-                        netdev->event_callback(netdev, NETDEV_EVENT_TX_COMPLETE);
-                        DEBUG("[at86rf2xx] TX SUCCESS\n");
-                        break;
-#endif
-                    case AT86RF2XX_TRX_STATE__TRAC_NO_ACK:
-                        netdev->event_callback(netdev, NETDEV_EVENT_TX_NOACK);
-                        DEBUG("[at86rf2xx] TX NO_ACK\n");
-                        break;
-                    case AT86RF2XX_TRX_STATE__TRAC_CHANNEL_ACCESS_FAILURE:
-                        netdev->event_callback(netdev, NETDEV_EVENT_TX_MEDIUM_BUSY);
-                        DEBUG("[at86rf2xx] TX_CHANNEL_ACCESS_FAILURE\n");
-                        break;
-                    default:
-                        DEBUG("[at86rf2xx] Unhandled TRAC_STATUS: %d\n",
-                              trac_status >> 5);
-                }
-            }
-        }
-    }
+//    if (irq_mask & AT86RF2XX_IRQ_STATUS_MASK__TRX_END) {
+//        if ((state == AT86RF2XX_STATE_RX_AACK_ON)
+//            || (state == AT86RF2XX_STATE_BUSY_RX_AACK)) {
+//            DEBUG("[at86rf2xx] EVT - RX_END\n");
+//            if (!(dev->netdev.flags & AT86RF2XX_OPT_TELL_RX_END)) {
+//                return;
+//            }
+//            netdev->event_callback(netdev, NETDEV_EVENT_RX_COMPLETE);
+//        }
+//        else if ((state == AT86RF2XX_STATE_TX_ARET_ON)
+//                 || (state == AT86RF2XX_STATE_BUSY_TX_ARET)) {
+//            /* check for more pending TX calls and return to idle state if
+//             * there are none */
+//            assert(dev->pending_tx != 0);
+//            if ((--dev->pending_tx) == 0) {
+//                at86rf2xx_set_state(dev, dev->idle_state);
+//                DEBUG("[at86rf2xx] return to idle state 0x%x\n", dev->idle_state);
+//            }
+///* Only radios with the XAH_CTRL_2 register support frame retry reporting */
+//#if AT86RF2XX_HAVE_RETRIES
+//            dev->tx_retries = (at86rf215_reg_read(dev, AT86RF2XX_REG__XAH_CTRL_2)
+//                               & AT86RF2XX_XAH_CTRL_2__ARET_FRAME_RETRIES_MASK) >>
+//                              AT86RF2XX_XAH_CTRL_2__ARET_FRAME_RETRIES_OFFSET;
+//#endif
+//
+//            DEBUG("[at86rf2xx] EVT - TX_END\n");
+//
+//            if (netdev->event_callback && (dev->netdev.flags & AT86RF2XX_OPT_TELL_TX_END)) {
+//                switch (trac_status) {
+//#ifdef MODULE_OPENTHREAD
+//                    case AT86RF2XX_TRX_STATE__TRAC_SUCCESS:
+//                        netdev->event_callback(netdev, NETDEV_EVENT_TX_COMPLETE);
+//                        DEBUG("[at86rf2xx] TX SUCCESS\n");
+//                        break;
+//                    case AT86RF2XX_TRX_STATE__TRAC_SUCCESS_DATA_PENDING:
+//                        netdev->event_callback(netdev, NETDEV_EVENT_TX_COMPLETE_DATA_PENDING);
+//                        DEBUG("[at86rf2xx] TX SUCCESS DATA PENDING\n");
+//                        break;
+//#else
+//                    case AT86RF2XX_TRX_STATE__TRAC_SUCCESS:
+//                    case AT86RF2XX_TRX_STATE__TRAC_SUCCESS_DATA_PENDING:
+//                        netdev->event_callback(netdev, NETDEV_EVENT_TX_COMPLETE);
+//                        DEBUG("[at86rf2xx] TX SUCCESS\n");
+//                        break;
+//#endif
+//                    case AT86RF2XX_TRX_STATE__TRAC_NO_ACK:
+//                        netdev->event_callback(netdev, NETDEV_EVENT_TX_NOACK);
+//                        DEBUG("[at86rf2xx] TX NO_ACK\n");
+//                        break;
+//                    case AT86RF2XX_TRX_STATE__TRAC_CHANNEL_ACCESS_FAILURE:
+//                        netdev->event_callback(netdev, NETDEV_EVENT_TX_MEDIUM_BUSY);
+//                        DEBUG("[at86rf2xx] TX_CHANNEL_ACCESS_FAILURE\n");
+//                        break;
+//                    default:
+//                        DEBUG("[at86rf2xx] Unhandled TRAC_STATUS: %d\n",
+//                              trac_status >> 5);
+//                }
+//            }
+//        }
+//    }
 }

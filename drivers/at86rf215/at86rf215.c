@@ -50,6 +50,11 @@ void at86rf215_reset(at86rf2xx_t *dev)
 
 	DEBUG("[rf215] -- reset : set config\n");
 
+	/********* common *********/
+	/*** Clock Output: off ***/
+	tmp = 0x0;
+	at86rf215_reg_write(dev, AT86RF215_REG__RF_CLKO, tmp);
+
 	/********* IEEE *********/
 	/*** MAC ***/
     /* get an 8-byte unique ID to use as hardware address */
@@ -72,7 +77,7 @@ void at86rf215_reset(at86rf2xx_t *dev)
 	/********* Analog & Digital Frontend *********/
 	/*** Channel Configuration ***/
     /* set default channel */
-    at86rf215_set_chan(dev, AT86RF2XX_DEFAULT_CHANNEL);
+    at86rf215_set_chan(dev, AT86RF2XX_DEFAULT_CHANNEL); // ch2: 863.625MHz / 1.2MHz.
 	/*** Transmitter Frontend ***/
 	at86rf215_set_tx_frontend(dev);
     /* TX power (default: maximum 31) */
@@ -197,9 +202,9 @@ void at86rf2xx_tx_exec(const at86rf2xx_t *dev)
 	} while ( !(tmp|AT86RF215_BBCn_IRQS__TXFE_M) );
 
 	/*** enable baseband ***/
-	tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_PC);
-	tmp |= AT86RF215_BBEN_ENABLE;
-	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_PC, tmp);
+//	tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_PC);
+//	tmp |= AT86RF215_BBEN_ENABLE;
+//	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_PC, tmp);
 }
 
 bool at86rf2xx_cca(at86rf2xx_t *dev)
