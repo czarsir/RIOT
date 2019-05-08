@@ -46,12 +46,14 @@ extern "C" {
 #define AT86RF215_REG__VERSION                                  (0x000E)
 
 /*** common ***/
+#define AT86RF215_REG__RF_CFG                                   (0x0006)
 #define AT86RF215_REG__RF_CLKO                                  (0x0007)
 #define AT86RF215_REG__RF_IQIFC1                                (0x000B)
 
 /*** RF09 ***/
 #define AT86RF215_REG__RF09_STATE                               (0x0102)
 #define AT86RF215_REG__RF09_CMD                                 (0x0103)
+#define AT86RF215_REG__RF09_IRQS                                (0x0000)
 /* channel */
 #define AT86RF215_REG__RF09_CS                                  (0x0104)
 #define AT86RF215_REG__RF09_CCF0L                               (0x0105)
@@ -101,6 +103,10 @@ extern "C" {
 #define AT86RF215_REG__BBC0_FBRXS                               (0x2000)
 /* TX Frame Buffer */
 #define AT86RF215_REG__BBC0_FBTXS                               (0x2800)
+
+/*** RF24 ***/
+#define AT86RF215_REG__RF24_IRQS                                (0x0001)
+
 
 /**
  * @name    Register addresses
@@ -160,6 +166,7 @@ extern "C" {
 
 /*** Mask ***/
 #define AT86RF215_RFn_STATE_MASK                                (0x07)
+#define AT86RF215_RFn_DRV_MASK                                  (0x03)
 #define AT86RF215_RFn_TX_PWR_MASK                               (0x1F)
 #define AT86RF215_RFn_AGC_TGT_M                                 (0xE0)
 #define AT86RF215_BBCn_IRQS__TXFE_M                             (0x10)

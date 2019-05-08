@@ -116,10 +116,16 @@ void at86rf215_reset(at86rf2xx_t *dev)
 
 
     /********* Interrupts *********/
+//	tmp = at86rf215_reg_read(dev, AT86RF215_REG__RF_CFG);
+//	tmp &= ~(AT86RF215_RFn_DRV_MASK);
+//	tmp |= 0x3;
+//	at86rf215_reg_write(dev, AT86RF215_REG__RF_CFG, tmp);
 	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_IRQM, AT86RF215_BBCn_IRQM__RXFS_M);
 	//at86rf215_reg_write(dev, AT86RF215_REG__BBC0_IRQM, AT86RF215_BBCn_IRQM__RXFE_M);
 	/* clear interrupt flags */
+	at86rf215_reg_read(dev, AT86RF215_REG__RF09_IRQS);
 	at86rf215_reg_read(dev, AT86RF215_REG__BBC0_IRQS);
+	at86rf215_reg_read(dev, AT86RF215_REG__RF24_IRQS);
 
 	/********* State Machine *********/
 	DEBUG("[rf215] -- reset : set state (TODO: stay TRXOFF)\n");
@@ -197,9 +203,15 @@ void at86rf2xx_tx_exec(const at86rf2xx_t *dev)
     }
 
 	/*** wait until end ***/
+//	do {
+//		tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_IRQS);
+//	} while ( !(tmp|AT86RF215_BBCn_IRQS__TXFE_M) );
 	do {
-		tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_IRQS);
-	} while ( !(tmp|AT86RF215_BBCn_IRQS__TXFE_M) );
+		tmp = at86rf215_reg_read(dev, AT86RF215_REG__RF09_STATE)
+				& AT86RF215_RFn_STATE_MASK;
+	} while ( tmp != AT86RF215_STATE_RF_TXPREP );
+	/* change to RX */
+	at86rf215_reg_write(dev, AT86RF215_REG__RF09_CMD, AT86RF215_STATE_RF_RX);
 
 	/*** enable baseband ***/
 //	tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_PC);

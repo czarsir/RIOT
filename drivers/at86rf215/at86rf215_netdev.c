@@ -81,8 +81,8 @@ static int _init(netdev_t *netdev)
     gpio_clear(dev->params.sleep_pin);
     gpio_init(dev->params.reset_pin, GPIO_OUT);
     gpio_set(dev->params.reset_pin);
-    //gpio_init_int(dev->params.int_pin, GPIO_IN, GPIO_RISING, _irq_handler, dev);
-	gpio_init_int(GPIO_PIN(PORT_A, 0), GPIO_IN, GPIO_RISING, _irq_handler, dev);
+    gpio_init_int(dev->params.int_pin, GPIO_IN, GPIO_RISING, _irq_handler, dev);
+	//gpio_init_int(GPIO_PIN(PORT_A, 0), GPIO_IN, GPIO_RISING, _irq_handler, dev);
 
 	/* test */
 	uint8_t temp = at86rf215_reg_read(dev, AT86RF215_REG__PART_NUM);
