@@ -58,6 +58,10 @@ static void _irq_handler(void *arg)
 		LED2_TOGGLE;
 	}
 
+	if(tmp & AT86RF215_BBCn_IRQS__RXFE_M) {
+		puts("[rf215] irq_handler : Rx end.\n");
+	}
+
 	//at86rf2xx_set_state(dd, AT86RF215_STATE_RF_RX);
 	at86rf215_reg_write(dd, AT86RF215_REG__RF09_CMD, AT86RF215_STATE_RF_RX);
 
@@ -81,8 +85,6 @@ static int _init(netdev_t *netdev)
     gpio_clear(dev->params.sleep_pin);
     gpio_init(dev->params.reset_pin, GPIO_OUT);
     gpio_set(dev->params.reset_pin);
-    gpio_init_int(dev->params.int_pin, GPIO_IN, GPIO_RISING, _irq_handler, dev);
-	//gpio_init_int(GPIO_PIN(PORT_A, 0), GPIO_IN, GPIO_RISING, _irq_handler, dev);
 
 	/* test */
 	uint8_t temp = at86rf215_reg_read(dev, AT86RF215_REG__PART_NUM);
@@ -93,6 +95,10 @@ static int _init(netdev_t *netdev)
 	DEBUG("[rf215] init : reset\n");
     /* reset device to default values and put it into RX state */
     at86rf215_reset(dev);
+
+	/*** ISR ***/
+	gpio_init_int(dev->params.int_pin, GPIO_IN, GPIO_RISING, _irq_handler, dev);
+	//gpio_init_int(GPIO_PIN(PORT_A, 0), GPIO_IN, GPIO_RISING, _irq_handler, dev);
 
     /* test if the SPI is set up correctly and the device is responding */
     if (at86rf215_reg_read(dev, AT86RF215_REG__PART_NUM) != AT86RF2XX_PARTNUM) {
