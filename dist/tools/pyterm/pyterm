@@ -242,9 +242,14 @@ class SerCmd(cmd.Cmd):
             try:
                 self.serial_connect()
             except OSError as e:
-                self.logger.error("Cannot connect to serial port {}: {}"
+                self.port = "/dev/tty.usbserial-00000000"
+                self.logger.info("Try serial port %s" % self.port)
+                try:
+                    self.serial_connect()
+                except OSError as e:
+                    self.logger.error("Cannot connect to serial port {}: {}"
                                   .format(self.port, e.strerror))
-                sys.exit(1)
+                    sys.exit(1)
 
         # wait until connection is established and fire startup
         # commands to the node
