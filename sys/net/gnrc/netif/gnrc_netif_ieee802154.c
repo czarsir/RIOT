@@ -21,7 +21,7 @@
 #include "net/ipv6/hdr.h"
 #endif
 
-#define ENABLE_DEBUG (1)
+#define ENABLE_DEBUG (0)
 #include "debug.h"
 
 #if defined(MODULE_OD) && ENABLE_DEBUG
@@ -113,7 +113,8 @@ static gnrc_pktsnip_t *_recv(gnrc_netif_t *netif)
                 return NULL;
             }
             nread -= mhr_len;
-			DEBUG("[ieee802154] recv : %.*s\n", nread, (char *)(pkt->data + mhr_len));
+			/* must be without IP protocol */
+			//DEBUG("[ieee802154] recv : %.*s\n", nread, (char *)(pkt->data + mhr_len));
             /* mark IEEE 802.15.4 header */
             ieee802154_hdr = gnrc_pktbuf_mark(pkt, mhr_len, GNRC_NETTYPE_UNDEF);
             if (ieee802154_hdr == NULL) {

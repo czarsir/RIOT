@@ -46,7 +46,7 @@ static void _irq_handler(void *arg)
 	netdev_t *dev = (netdev_t *) arg;
 	at86rf2xx_t *dd = (at86rf2xx_t *) arg;
 
-	//DEBUG("[rf215] irq_handler\n");
+	/* use puts() instead of DEBUG(). stack too small */
 	puts("[rf215] irq_handler\n");
 	GPIOB->ODR ^= 1;
 //	uint8_t tmp = at86rf215_reg_read(dd, AT86RF215_REG__BBC0_IRQS);
@@ -119,9 +119,9 @@ static int _send(netdev_t *netdev, const iolist_t *iolist)
     at86rf2xx_t *dev = (at86rf2xx_t *)netdev;
     size_t len = 0;
 
-	DEBUG("[rf215] send \n");
+	//DEBUG("[rf215] send \n");
 
-	DEBUG("[rf215] send : tx prepare\n");
+	//DEBUG("[rf215] send : tx prepare\n");
     at86rf2xx_tx_prepare(dev);
 
     /* load packet data into FIFO */
@@ -135,13 +135,13 @@ static int _send(netdev_t *netdev, const iolist_t *iolist)
 #ifdef MODULE_NETSTATS_L2
         netdev->stats.tx_bytes += len;
 #endif
-		DEBUG("[rf215] send : tx load\n");
+		//DEBUG("[rf215] send : tx load\n");
         len = at86rf2xx_tx_load(dev, iol->iol_base, iol->iol_len, len);
     }
 
     /* send data out directly if pre-loading id disabled */
     if (!(dev->netdev.flags & AT86RF2XX_OPT_PRELOADING)) {
-		DEBUG("[rf215] send : tx exec\n");
+		//DEBUG("[rf215] send : tx exec\n");
         at86rf2xx_tx_exec(dev);
     }
 
@@ -159,14 +159,14 @@ static int _recv(netdev_t *netdev, void *buf, size_t len, void *info)
 	uint8_t tmpH;
 	uint8_t tmpL;
 
-	DEBUG("[rf215] recv \n");
+	//DEBUG("[rf215] recv \n");
 
 	/*** get size ***/
 	tmpH = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_RXFLH);
 	tmpL = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_RXFLL);
 	pkt_len = (((tmpH & 0x07)<<8) | tmpL) - 2;
 
-	DEBUG("[rf215] recv : pkt_len %u.\n", pkt_len);
+	//DEBUG("[rf215] recv : pkt_len %u.\n", pkt_len);
 
     /* frame buffer protection will be unlocked as soon as at86rf2xx_fb_stop()
      * is called*/
@@ -181,7 +181,7 @@ static int _recv(netdev_t *netdev, void *buf, size_t len, void *info)
     /* just return length when buf == NULL */
     if (buf == NULL) {
         //at86rf2xx_fb_stop(dev);
-		DEBUG("[rf215] recv : complete (length).\n");
+		//DEBUG("[rf215] recv : complete (length).\n");
         return pkt_len;
     }
     /* not enough space in buf */
@@ -648,7 +648,7 @@ static void _isr(netdev_t *netdev)
 	if (irq_mask & AT86RF215_BBCn_IRQS__RXFE_M) {
 //		if ((state == AT86RF2XX_STATE_RX_AACK_ON)
 //            || (state == AT86RF2XX_STATE_BUSY_RX_AACK)) {
-            DEBUG("[at86rf2xx] EVT - RX_END\n");
+            DEBUG("[rf215] EVT - RX_COMPLETE\n");
             if (!(dev->netdev.flags & AT86RF2XX_OPT_TELL_RX_END)) {
                 return;
             }
