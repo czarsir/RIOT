@@ -113,6 +113,7 @@ static gnrc_pktsnip_t *_recv(gnrc_netif_t *netif)
                 return NULL;
             }
             nread -= mhr_len;
+			DEBUG("[ieee802154] recv : %.*s\n", nread, (char *)(pkt->data + mhr_len));
             /* mark IEEE 802.15.4 header */
             ieee802154_hdr = gnrc_pktbuf_mark(pkt, mhr_len, GNRC_NETTYPE_UNDEF);
             if (ieee802154_hdr == NULL) {

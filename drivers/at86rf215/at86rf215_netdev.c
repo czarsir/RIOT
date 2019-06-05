@@ -43,31 +43,31 @@ const netdev_driver_t at86rf2xx_driver = {
 
 static void _irq_handler(void *arg)
 {
-//    netdev_t *dev = (netdev_t *) arg;
+	netdev_t *dev = (netdev_t *) arg;
 	at86rf2xx_t *dd = (at86rf2xx_t *) arg;
 
 	//DEBUG("[rf215] irq_handler\n");
 	puts("[rf215] irq_handler\n");
 	GPIOB->ODR ^= 1;
-	uint8_t tmp = at86rf215_reg_read(dd, AT86RF215_REG__BBC0_IRQS);
-	if(tmp & AT86RF215_BBCn_IRQS__RXFS_M) {
-		puts("[rf215] irq_handler : Rx start.\n");
-		LED1_TOGGLE;
-	} else {
-		puts("[rf215] irq_handler : others.\n");
-		LED2_TOGGLE;
-	}
-
-	if(tmp & AT86RF215_BBCn_IRQS__RXFE_M) {
-		puts("[rf215] irq_handler : Rx end.\n");
-	}
+//	uint8_t tmp = at86rf215_reg_read(dd, AT86RF215_REG__BBC0_IRQS);
+//	if(tmp & AT86RF215_BBCn_IRQS__RXFS_M) {
+//		puts("[rf215] irq_handler : Rx start.\n");
+//		LED1_TOGGLE;
+//	} else {
+//		puts("[rf215] irq_handler : others.\n");
+//		LED2_TOGGLE;
+//	}
+//
+//	if(tmp & AT86RF215_BBCn_IRQS__RXFE_M) {
+//		puts("[rf215] irq_handler : Rx end.\n");
+//	}
 
 	//at86rf2xx_set_state(dd, AT86RF215_STATE_RF_RX);
 	at86rf215_reg_write(dd, AT86RF215_REG__RF09_CMD, AT86RF215_STATE_RF_RX);
 
-//    if (dev->event_callback) {
-//        dev->event_callback(dev, NETDEV_EVENT_ISR);
-//    }
+	if (dev->event_callback) {
+		dev->event_callback(dev, NETDEV_EVENT_ISR);
+	}
 }
 
 static int _init(netdev_t *netdev)
@@ -622,7 +622,7 @@ static int _set(netdev_t *netdev, netopt_t opt, const void *val, size_t len)
 static void _isr(netdev_t *netdev)
 {
     at86rf2xx_t *dev = (at86rf2xx_t *) netdev;
-//    uint8_t irq_mask;
+	uint8_t irq_mask;
     uint8_t state;
 //    uint8_t trac_status;
 
@@ -635,7 +635,7 @@ static void _isr(netdev_t *netdev)
     }
 
     /* read (consume) device status */
-//    irq_mask = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_IRQS);
+	irq_mask = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_IRQS);
 
 //    trac_status = at86rf215_reg_read(dev, AT86RF215_REG__RF09_CMD)
 //                  & AT86RF2XX_TRX_STATE_MASK__TRAC;
@@ -645,15 +645,15 @@ static void _isr(netdev_t *netdev)
 //        DEBUG("[at86rf2xx] EVT - RX_START\n");
 //    }
 
-//    if (irq_mask & AT86RF2XX_IRQ_STATUS_MASK__TRX_END) {
-//        if ((state == AT86RF2XX_STATE_RX_AACK_ON)
+	if (irq_mask & AT86RF215_BBCn_IRQS__RXFE_M) {
+//		if ((state == AT86RF2XX_STATE_RX_AACK_ON)
 //            || (state == AT86RF2XX_STATE_BUSY_RX_AACK)) {
-//            DEBUG("[at86rf2xx] EVT - RX_END\n");
-//            if (!(dev->netdev.flags & AT86RF2XX_OPT_TELL_RX_END)) {
-//                return;
-//            }
-//            netdev->event_callback(netdev, NETDEV_EVENT_RX_COMPLETE);
-//        }
+            DEBUG("[at86rf2xx] EVT - RX_END\n");
+            if (!(dev->netdev.flags & AT86RF2XX_OPT_TELL_RX_END)) {
+                return;
+            }
+            netdev->event_callback(netdev, NETDEV_EVENT_RX_COMPLETE);
+//		}
 //        else if ((state == AT86RF2XX_STATE_TX_ARET_ON)
 //                 || (state == AT86RF2XX_STATE_BUSY_TX_ARET)) {
 //            /* check for more pending TX calls and return to idle state if
@@ -704,5 +704,5 @@ static void _isr(netdev_t *netdev)
 //                }
 //            }
 //        }
-//    }
+	}
 }
