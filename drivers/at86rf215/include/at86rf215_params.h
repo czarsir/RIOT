@@ -21,7 +21,7 @@ extern "C" {
 #define AT86RF215_PARAM_CS          (GPIO_PIN(PORT_A, 4))
 #define AT86RF215_PARAM_INT         (GPIO_PIN(PORT_E, 7))
 #define AT86RF215_PARAM_SLEEP       (GPIO_PIN(PORT_B, 8))
-#define AT86RF215_PARAM_RESET       (GPIO_PIN(PORT_B, 9))
+#define AT86RF215_PARAM_RESET       (GPIO_PIN(PORT_B, 0))
 
 #define AT86RF215_PARAMS            { .spi = AT86RF215_PARAM_SPI,         \
                                       .spi_clk = AT86RF215_PARAM_SPI_CLK, \

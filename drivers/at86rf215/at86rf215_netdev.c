@@ -48,7 +48,7 @@ static void _irq_handler(void *arg)
 
 	/* use puts() instead of DEBUG(). stack too small */
 	puts("[rf215] irq_handler\n");
-	GPIOB->ODR ^= 1;
+
 //	uint8_t tmp = at86rf215_reg_read(dd, AT86RF215_REG__BBC0_IRQS);
 //	if(tmp & AT86RF215_BBCn_IRQS__RXFS_M) {
 //		puts("[rf215] irq_handler : Rx start.\n");
@@ -76,8 +76,8 @@ static int _init(netdev_t *netdev)
 
 	DEBUG("[rf215] init\n");
 
-	gpio_init(GPIO_PIN(PORT_B, 0), GPIO_OUT);
-	GPIOB->BSRR = 1;
+	/*** test ***/
+	//gpio_init(GPIO_PIN(PORT_B, 9), GPIO_OUT);
 
     /* initialize GPIOs */
     spi_init_cs(dev->params.spi, dev->params.cs_pin);
