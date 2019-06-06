@@ -111,13 +111,13 @@ int16_t at86rf215_get_txpower(const at86rf2xx_t *dev)
 
 void at86rf215_set_txpower(const at86rf2xx_t *dev, int16_t txpower)
 {
-    txpower += AT86RF2XX_TXPOWER_OFF;
+    txpower += AT86RF215_TXPOWER_OFFSET;
 
     if (txpower < 0) {
         txpower = 0;
     }
-    else if (txpower > AT86RF2XX_TXPOWER_MAX) {
-        txpower = AT86RF2XX_TXPOWER_MAX;
+    else if (txpower > AT86RF215_TXPOWER_MAX) {
+        txpower = AT86RF215_TXPOWER_MAX;
     }
 
 	/* use default (max) */
@@ -446,10 +446,10 @@ uint8_t at86rf2xx_set_state(at86rf2xx_t *dev, uint8_t state)
              state == AT86RF2XX_STATE_TX_ARET_ON) ||
             (old_state == AT86RF2XX_STATE_TX_ARET_ON &&
              state == AT86RF2XX_STATE_RX_AACK_ON)) {
-            _set_state(dev, AT86RF2XX_STATE_PLL_ON, AT86RF2XX_STATE_PLL_ON);
+            _set_state(dev, AT86RF215_STATE_RF_TXPREP, AT86RF215_STATE_RF_TXPREP);
         }
         /* check if we need to wake up from sleep mode */
-        if (state == AT86RF2XX_STATE_SLEEP) {
+        if (state == AT86RF215_STATE_RF_SLEEP) {
             /* First go to TRX_OFF */
             _set_state(dev, AT86RF215_STATE_RF_TRXOFF,
                        AT86RF215_STATE_RF_TRXOFF);
@@ -460,7 +460,7 @@ uint8_t at86rf2xx_set_state(at86rf2xx_t *dev, uint8_t state)
             dev->state = state;
         }
         else {
-            if (old_state == AT86RF2XX_STATE_SLEEP) {
+            if (old_state == AT86RF215_STATE_RF_SLEEP) {
                 DEBUG("at86rf2xx: waking up from sleep mode\n");
                 at86rf2xx_assert_awake(dev);
             }

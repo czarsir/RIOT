@@ -127,7 +127,7 @@ static int _send(netdev_t *netdev, const iolist_t *iolist)
     /* load packet data into FIFO */
     for (const iolist_t *iol = iolist; iol; iol = iol->iol_next) {
         /* current packet data + FCS too long */
-        if ((len + iol->iol_len + 2) > AT86RF2XX_MAX_PKT_LENGTH) {
+        if ((len + iol->iol_len + 2) > AT86RF215_MAX_PKT_LENGTH) {
             DEBUG("[at86rf2xx] error: packet too large (%u byte) to be send\n",
                   (unsigned)len + 2);
             return -EOVERFLOW;
@@ -168,56 +168,56 @@ static int _recv(netdev_t *netdev, void *buf, size_t len, void *info)
 
 	//DEBUG("[rf215] recv : pkt_len %u.\n", pkt_len);
 
-    /* frame buffer protection will be unlocked as soon as at86rf2xx_fb_stop()
+    /* frame buffer protection will be unlocked as soon as at86rf215_fb_stop()
      * is called*/
-    //at86rf2xx_fb_start(dev);
+    //at86rf215_fb_start(dev);
 
     /* get the size of the received packet */
-    //at86rf2xx_fb_read(dev, &phr, 1);
+    //at86rf215_fb_read(dev, &phr, 1);
 
     /* ignore MSB (refer p.80) and substract length of FCS field */
     //pkt_len = (phr & 0x7f) - 2;
 
     /* just return length when buf == NULL */
     if (buf == NULL) {
-        //at86rf2xx_fb_stop(dev);
+        //at86rf215_fb_stop(dev);
 		//DEBUG("[rf215] recv : complete (length).\n");
         return pkt_len;
     }
     /* not enough space in buf */
     if (pkt_len > len) {
-        //at86rf2xx_fb_stop(dev);
+        //at86rf215_fb_stop(dev);
         return -ENOBUFS;
     }
 #ifdef MODULE_NETSTATS_L2
     netdev->stats.rx_count++;
     netdev->stats.rx_bytes += pkt_len;
 #endif
-	at86rf2xx_fb_start(dev);
+	at86rf215_fb_start(dev);
     /* copy payload */
-    at86rf2xx_fb_read(dev, (uint8_t *)buf, pkt_len);
+    at86rf215_fb_read(dev, (uint8_t *)buf, pkt_len);
 
     /* Ignore FCS but advance fb read - we must give a temporary buffer here,
      * as we are not allowed to issue SPI transfers without any buffer */
     uint8_t tmp[2];
-    at86rf2xx_fb_read(dev, tmp, 2);
+    at86rf215_fb_read(dev, tmp, 2);
     (void)tmp;
 
     if (info != NULL) {
         uint8_t rssi = 0;
         netdev_ieee802154_rx_info_t *radio_info = info;
-        at86rf2xx_fb_read(dev, &(radio_info->lqi), 1);
+        at86rf215_fb_read(dev, &(radio_info->lqi), 1);
 #ifndef MODULE_AT86RF231
-        at86rf2xx_fb_read(dev, &(rssi), 1);
-        at86rf2xx_fb_stop(dev);
+        at86rf215_fb_read(dev, &(rssi), 1);
+        at86rf215_fb_stop(dev);
 #else
-        at86rf2xx_fb_stop(dev);
+        at86rf215_fb_stop(dev);
         rssi = at86rf215_reg_read(dev, AT86RF2XX_REG__PHY_ED_LEVEL);
 #endif
         radio_info->rssi = RSSI_BASE_VAL + rssi;
     }
     else {
-        at86rf2xx_fb_stop(dev);
+        at86rf215_fb_stop(dev);
     }
 
 	DEBUG("[rf215] recv : complete.\n");
@@ -305,7 +305,7 @@ static int _get(netdev_t *netdev, netopt_t opt, void *val, size_t max_len)
 
         case NETOPT_MAX_PACKET_SIZE:
             assert(max_len >= sizeof(int16_t));
-            *((uint16_t *)val) = AT86RF2XX_MAX_PKT_LENGTH - _MAX_MHR_OVERHEAD;
+            *((uint16_t *)val) = AT86RF215_MAX_PKT_LENGTH - _MAX_MHR_OVERHEAD;
             return sizeof(uint16_t);
 
         case NETOPT_STATE:

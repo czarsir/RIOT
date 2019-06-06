@@ -32,7 +32,7 @@ extern "C" {
 
 /*** Variables ***/
 
-static const at86rf2xx_params_t at86rf2xx_params[] =
+static const at86rf215_params_t at86rf2xx_params[] =
 {
     AT86RF215_PARAMS
 };

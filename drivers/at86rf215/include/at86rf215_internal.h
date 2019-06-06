@@ -15,149 +15,66 @@
 extern "C" {
 #endif
 
+/********* Config *********/
 
-/**
- * @brief Max. allowed transmit power for the transceiver
- */
-#ifdef MODULE_AT86RF212B
-#define AT86RF2XX_TXPOWER_MAX           (36)
-#elif MODULE_AT86RF233
-#define AT86RF2XX_TXPOWER_MAX           (21)
-#else
-#define AT86RF2XX_TXPOWER_MAX           (20)
-#endif
+// TODO
+/*** Max transmit power ***/
+#define AT86RF215_TXPOWER_MAX           (20)
 
-/**
- * @brief Transmit power offset
- */
-#ifdef MODULE_AT86RF212B
-#define AT86RF2XX_TXPOWER_OFF           (25)
-#else
-#define AT86RF2XX_TXPOWER_OFF           (17)
-#endif
+// TODO
+/*** Transmit power offset ***/
+#define AT86RF215_TXPOWER_OFFSET        (17)
 
-/**
- * @brief   Transition time from SLEEP to TRX_OFF in us, refer figure 7-4, p.42.
- *          For different environments refer figure 13-13, p.201
- */
-#define AT86RF2XX_WAKEUP_DELAY          (306U)
+/*** Reset ***/
+/* Minimum reset pulse width */
+#define AT86RF215_RESET_PULSE_WIDTH     (62U)
+/* The typical transition time to TRX_OFF after reset pulse is 26 us */
+#define AT86RF215_RESET_DELAY           (62U)
 
-/**
- * @brief   Minimum reset pulse width, refer p.190. We use 62us so
- *          that it is at least one tick on platforms with coarse xtimers
- */
-#define AT86RF2XX_RESET_PULSE_WIDTH     (62U)
+/*** Wakeup ***/
+/* Transition time from SLEEP to TRX_OFF in us */
+#define AT86RF215_WAKEUP_DELAY          (306U)
 
-/**
- * @brief   The typical transition time to TRX_OFF after reset pulse is 26 us,
- *          refer to figure 7-8, p. 44. We use 62 us so that it is at least one
- *          tick on platforms that use a 16384 Hz oscillator or have slow start
- *          up times due to parasitic capacitance on the oscillator
- */
-#define AT86RF2XX_RESET_DELAY           (62U)
+/********* Functions *********************************************************/
 
-/**
- * @brief   Read from a register at address `addr` from device `dev`.
- *
- * @param[in] dev       device to read from
- * @param[in] addr      address of the register to read
- *
- * @return              the value of the specified register
- */
+/********* Manipulation *********/
+
+/*** Register ***/
 uint8_t at86rf215_reg_read(const at86rf2xx_t *dev, uint16_t addr);
-
-/**
- * @brief   Write to a register at address `addr` from device `dev`.
- *
- * @param[in] dev       device to write to
- * @param[in] addr      address of the register to write
- * @param[in] value     value to write to the given register
- */
 void at86rf215_reg_write(const at86rf2xx_t *dev, uint16_t addr, uint8_t value);
 
-/**
- * @brief   Read a chunk of data from the SRAM of the given device
- *
- * @param[in]  dev      device to read from
- * @param[in]  offset   starting address to read from [valid 0x00-0x7f]
- * @param[out] data     buffer to read data into
- * @param[in]  len      number of bytes to read from SRAM
- */
-void at86rf2xx_sram_read(const at86rf2xx_t *dev, uint8_t offset,
-                         uint8_t *data, size_t len);
-
-/**
- * @brief   Write a chunk of data into the SRAM of the given device
- *
- * @param[in] dev       device to write to
- * @param[in] offset    address in the SRAM to write to [valid 0x00-0x7f]
- * @param[in] data      data to copy into SRAM
- * @param[in] len       number of bytes to write to SRAM
- */
+// TODO
+/*** SRAM ***/
 void at86rf2xx_sram_write(const at86rf2xx_t *dev, uint8_t offset,
                           const uint8_t *data, size_t len);
 
-/**
- * @brief   Start a read transcation internal frame buffer of the given device
- *
- * Reading the frame buffer returns some extra bytes that are not accessible
- * through reading the RAM directly. This locks the used SPI.
- *
- * @param[in]  dev      device to start read
- */
-void at86rf2xx_fb_start(const at86rf2xx_t *dev);
+/*** internal Frame Buffer ***/
+void at86rf215_fb_start(const at86rf2xx_t *dev);
+void at86rf215_fb_read(const at86rf2xx_t *dev, uint8_t *data, size_t len);
+void at86rf215_fb_stop(const at86rf2xx_t *dev);
 
-/**
- * @brief   Read the internal frame buffer of the given device
- *
- * Each read advances the position in the buffer by @p len.
- *
- * @param[in]  dev      device to read from
- * @param[out] data     buffer to copy the data to
- * @param[in]  len      number of bytes to read from the frame buffer
- */
-void at86rf2xx_fb_read(const at86rf2xx_t *dev, uint8_t *data, size_t len);
+/********* Config *********/
 
-/**
- * @brief   Stop a read transcation internal frame buffer of the given device
- *
- * Release the SPI device and unlock frame buffer protection.
- *
- * @param[in]  dev      device to stop read
- */
-void at86rf2xx_fb_stop(const at86rf2xx_t *dev);
+/* config PHY parameters */
+void at86rf215_configure_phy(at86rf2xx_t *dev);
 
-/**
- * @brief   Convenience function for reading the status of the given device
- *
- * @param[in] dev       device to read the status from
- *
- * @return              internal status of the given device
- */
+/********* State *********/
+
+// TODO
+/* Convenience function for reading the status */
 uint8_t at86rf2xx_get_status(const at86rf2xx_t *dev);
 
-/**
- * @brief   Make sure that device is not sleeping
- *
- * @param[in,out] dev   device to eventually wake up
- */
+// TODO
+/* Make sure that device is not sleeping */
 void at86rf2xx_assert_awake(at86rf2xx_t *dev);
 
-/**
- * @brief   Trigger a hardware reset
- *
- * @param[in,out] dev   device to reset
- */
+/********* Operation *********/
+
+/* hardware reset */
 void at86rf215_hardware_reset(at86rf2xx_t *dev);
 
 
-/**
- * @brief   Set PHY parameters based on channel and page number
- *
- * @param[in,out] dev   device to configure
- */
-void at86rf215_configure_phy(at86rf2xx_t *dev);
-
+// TODO
 #if defined(MODULE_AT86RF233) || defined(MODULE_AT86RF231) || defined(DOXYGEN)
 /**
  * @brief   Read random data from the RNG

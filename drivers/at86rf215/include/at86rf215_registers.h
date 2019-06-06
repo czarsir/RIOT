@@ -23,34 +23,26 @@ extern "C" {
 /*** use AT86RF215 ***/
 #define AT86RF2XX_PARTNUM           AT86RF215_PARTNUM
 
-/*** SPI Protocol cmd ***/
+/*** SPI Protocol - cmd ***/
 #define AT86RF215_ACCESS_READ                                   (0x0000)
 #define AT86RF215_ACCESS_WRITE                                  (0x8000)
-
-/**
- * @name    SPI access specifiers
- * @{
- */
-#define AT86RF2XX_ACCESS_REG                                    (0x80)
-#define AT86RF2XX_ACCESS_FB                                     (0x20)
-#define AT86RF2XX_ACCESS_SRAM                                   (0x00)
-#define AT86RF2XX_ACCESS_READ                                   (0x00)
-#define AT86RF2XX_ACCESS_WRITE                                  (0x40)
-/** @} */
 
 
 /****** Register addresses ***************************************************/
 
-/*** base ***/
+/****** Base ******/
+
 #define AT86RF215_REG__PART_NUM                                 (0x000D)
 #define AT86RF215_REG__VERSION                                  (0x000E)
 
-/*** common ***/
+/****** Common ******/
+
 #define AT86RF215_REG__RF_CFG                                   (0x0006)
 #define AT86RF215_REG__RF_CLKO                                  (0x0007)
 #define AT86RF215_REG__RF_IQIFC1                                (0x000B)
 
-/*** RF09 ***/
+/****** RF09 ***************************************/
+
 #define AT86RF215_REG__RF09_STATE                               (0x0102)
 #define AT86RF215_REG__RF09_CMD                                 (0x0103)
 #define AT86RF215_REG__RF09_IRQS                                (0x0000)
@@ -71,7 +63,8 @@ extern "C" {
 #define AT86RF215_REG__RF09_TXDFE                               (0x0113)
 #define AT86RF215_REG__RF09_PAC                                 (0x0114)
 
-/*** BBC0 ***/
+/****** BBC0 ***************************************/
+
 #define AT86RF215_REG__BBC0_IRQS                                (0x0002)
 #define AT86RF215_REG__BBC0_IRQM                                (0x0300)
 #define AT86RF215_REG__BBC0_PC                                  (0x0301)
@@ -104,7 +97,8 @@ extern "C" {
 /* TX Frame Buffer */
 #define AT86RF215_REG__BBC0_FBTXS                               (0x2800)
 
-/*** RF24 ***/
+/****** RF24 ***************************************/
+
 #define AT86RF215_REG__RF24_IRQS                                (0x0001)
 
 
@@ -164,7 +158,8 @@ extern "C" {
 #define AT86RF2XX_REG__TST_CTRL_DIGI                            (0x36)
 /** @} */
 
-/*** Mask ***/
+/****** Mask ***************************************/
+
 #define AT86RF215_RFn_STATE_MASK                                (0x07)
 #define AT86RF215_RFn_DRV_MASK                                  (0x03)
 #define AT86RF215_RFn_TX_PWR_MASK                               (0x1F)
@@ -204,6 +199,11 @@ extern "C" {
 #define AT86RF215_AACK_ENABLE                                   (0x08)
 /* CCA measurement and automatic transmit */
 #define AT86RF215_CCATX_ENABLE                                  (0x02)
+
+
+
+
+/*<<<<<<<<<<<<<<<<< TODO all below >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
 /**
  * @name    Bitfield definitions for the TRX_CTRL_0 register

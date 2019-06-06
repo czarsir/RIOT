@@ -21,16 +21,16 @@ extern void at86rf215_set_rx_frontend(at86rf2xx_t *dev);
 extern void at86rf215_set_bbc(at86rf2xx_t *dev);
 
 
-void at86rf215_setup(at86rf2xx_t *dev, const at86rf2xx_params_t *params)
+void at86rf215_setup(at86rf2xx_t *dev, const at86rf215_params_t *params)
 {
     netdev_t *netdev = (netdev_t *)dev;
 
     netdev->driver = &at86rf2xx_driver;
     /* initialize device descriptor */
-    memcpy(&dev->params, params, sizeof(at86rf2xx_params_t));
+    memcpy(&dev->params, params, sizeof(at86rf215_params_t));
     dev->idle_state = AT86RF215_STATE_RF_TRXOFF;
     /* radio state is P_ON when first powered-on */
-    dev->state = AT86RF2XX_STATE_P_ON;
+    dev->state = AT86RF215_STATE_RF_RESET;
     dev->pending_tx = 0;
 }
 
@@ -66,7 +66,7 @@ void at86rf215_reset(at86rf2xx_t *dev)
     at86rf215_set_addr_long(dev, ntohll(addr_long.uint64.u64));
     at86rf215_set_addr_short(dev, ntohs(addr_long.uint16[0].u16));
     /*** set default PAN id ***/
-    at86rf215_set_pan(dev, AT86RF2XX_DEFAULT_PANID);
+    at86rf215_set_pan(dev, AT86RF215_DEFAULT_PANID);
 
 
 	/********* Operating Modes *********/
@@ -81,7 +81,7 @@ void at86rf215_reset(at86rf2xx_t *dev)
 	/*** Transmitter Frontend ***/
 	at86rf215_set_tx_frontend(dev);
     /* TX power (default: maximum 31) */
-	at86rf215_set_txpower(dev, AT86RF2XX_DEFAULT_TXPOWER); // set to max internally.
+	at86rf215_set_txpower(dev, AT86RF215_DEFAULT_TXPOWER); // set to max internally.
 	/*** Receiver Frontend ***/
 	at86rf215_set_rx_frontend(dev);
 	/* Energy Measurement */
@@ -138,7 +138,7 @@ void at86rf215_reset(at86rf2xx_t *dev)
 size_t at86rf2xx_send(at86rf2xx_t *dev, const uint8_t *data, size_t len)
 {
     /* check data length */
-    if (len > AT86RF2XX_MAX_PKT_LENGTH) {
+    if (len > AT86RF215_MAX_PKT_LENGTH) {
         DEBUG("[at86rf2xx] Error: data to send exceeds max packet size\n");
         return 0;
     }
@@ -219,6 +219,7 @@ void at86rf2xx_tx_exec(const at86rf2xx_t *dev)
 //	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_PC, tmp);
 }
 
+// TODO
 bool at86rf2xx_cca(at86rf2xx_t *dev)
 {
     uint8_t reg;
@@ -229,7 +230,7 @@ bool at86rf2xx_cca(at86rf2xx_t *dev)
     reg = rx_syn | AT86RF2XX_RX_SYN__RX_PDT_DIS;
     at86rf215_reg_write(dev, AT86RF2XX_REG__RX_SYN, reg);
     /* Manually triggered CCA is only possible in RX_ON (basic operating mode) */
-    at86rf2xx_set_state(dev, AT86RF2XX_STATE_RX_ON);
+    at86rf2xx_set_state(dev, AT86RF215_STATE_RF_RX);
     /* Perform CCA */
     reg = at86rf215_reg_read(dev, AT86RF2XX_REG__PHY_CC_CCA);
     reg |= AT86RF2XX_PHY_CC_CCA_MASK__CCA_REQUEST;

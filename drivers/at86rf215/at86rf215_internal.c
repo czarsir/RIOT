@@ -50,18 +50,6 @@ uint8_t at86rf215_reg_read(const at86rf2xx_t *dev, uint16_t addr)
     return value;
 }
 
-void at86rf2xx_sram_read(const at86rf2xx_t *dev, uint8_t offset,
-                         uint8_t *data, size_t len)
-{
-    uint8_t reg = (AT86RF2XX_ACCESS_SRAM | AT86RF2XX_ACCESS_READ);
-
-    getbus(dev);
-    spi_transfer_byte(SPIDEV, CSPIN, true, reg);
-    spi_transfer_byte(SPIDEV, CSPIN, true, offset);
-    spi_transfer_bytes(SPIDEV, CSPIN, false, NULL, data, len);
-    spi_release(SPIDEV);
-}
-
 void at86rf2xx_sram_write(const at86rf2xx_t *dev, uint8_t offset,
                           const uint8_t *data, size_t len)
 {
@@ -82,7 +70,7 @@ void at86rf2xx_sram_write(const at86rf2xx_t *dev, uint8_t offset,
 	spi_release(SPIDEV);
 }
 
-void at86rf2xx_fb_start(const at86rf2xx_t *dev)
+void at86rf215_fb_start(const at86rf2xx_t *dev)
 {
     //uint8_t reg = AT86RF2XX_ACCESS_FB | AT86RF2XX_ACCESS_READ;
 	uint16_t cmd = (AT86RF215_ACCESS_READ | AT86RF215_REG__BBC0_FBRXS);
@@ -93,13 +81,13 @@ void at86rf2xx_fb_start(const at86rf2xx_t *dev)
 	spi_transfer_byte(SPIDEV, CSPIN, true, (uint8_t)(cmd));
 }
 
-void at86rf2xx_fb_read(const at86rf2xx_t *dev,
+void at86rf215_fb_read(const at86rf2xx_t *dev,
                        uint8_t *data, size_t len)
 {
     spi_transfer_bytes(SPIDEV, CSPIN, true, NULL, data, len);
 }
 
-void at86rf2xx_fb_stop(const at86rf2xx_t *dev)
+void at86rf215_fb_stop(const at86rf2xx_t *dev)
 {
     /* transfer one byte (which we ignore) to release the chip select */
     spi_transfer_byte(SPIDEV, CSPIN, false, 1);
@@ -109,7 +97,7 @@ void at86rf2xx_fb_stop(const at86rf2xx_t *dev)
 uint8_t at86rf2xx_get_status(const at86rf2xx_t *dev)
 {
     /* if sleeping immediately return state */
-    if (dev->state == AT86RF2XX_STATE_SLEEP) {
+    if (dev->state == AT86RF215_STATE_RF_SLEEP) {
         return dev->state;
     }
 
@@ -119,10 +107,10 @@ uint8_t at86rf2xx_get_status(const at86rf2xx_t *dev)
 
 void at86rf2xx_assert_awake(at86rf2xx_t *dev)
 {
-    if (at86rf2xx_get_status(dev) == AT86RF2XX_STATE_SLEEP) {
+    if (at86rf2xx_get_status(dev) == AT86RF215_STATE_RF_SLEEP) {
         /* wake up and wait for transition to TRX_OFF */
         gpio_clear(dev->params.sleep_pin);
-        xtimer_usleep(AT86RF2XX_WAKEUP_DELAY);
+        xtimer_usleep(AT86RF215_WAKEUP_DELAY);
 
         /* update state: on some platforms, the timer behind xtimer
          * may be inaccurate or the radio itself may take longer
@@ -130,9 +118,9 @@ void at86rf2xx_assert_awake(at86rf2xx_t *dev)
          * Spin until we are actually awake
          */
         do {
-            dev->state = at86rf215_reg_read(dev, AT86RF2XX_REG__TRX_STATUS)
-                         & AT86RF2XX_TRX_STATUS_MASK__TRX_STATUS;
-        } while (dev->state != AT86RF2XX_TRX_STATUS__TRX_OFF);
+            dev->state = at86rf215_reg_read(dev, AT86RF215_REG__RF09_STATE)
+                         & AT86RF215_RFn_STATE_MASK;
+        } while (dev->state != AT86RF215_STATE_RF_TRXOFF);
     }
 }
 
@@ -142,9 +130,9 @@ void at86rf215_hardware_reset(at86rf2xx_t *dev)
 
     /* trigger hardware reset */
     gpio_clear(dev->params.reset_pin);
-    xtimer_usleep(AT86RF2XX_RESET_PULSE_WIDTH);
+    xtimer_usleep(AT86RF215_RESET_PULSE_WIDTH);
     gpio_set(dev->params.reset_pin);
-    xtimer_usleep(AT86RF2XX_RESET_DELAY);
+    xtimer_usleep(AT86RF215_RESET_DELAY);
 
 	/*** test ***/
 	dev->state = at86rf215_reg_read(dev, AT86RF215_REG__RF09_STATE)
