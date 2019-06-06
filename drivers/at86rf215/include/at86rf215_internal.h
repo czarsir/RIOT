@@ -17,9 +17,8 @@ extern "C" {
 
 /********* Config *********/
 
-// TODO
 /*** Max transmit power ***/
-#define AT86RF215_TXPOWER_MAX           (20)
+#define AT86RF215_TXPOWER_MAX           (31)
 
 // TODO
 /*** Transmit power offset ***/

@@ -132,7 +132,7 @@ void at86rf215_hardware_reset(at86rf2xx_t *dev)
 void at86rf215_configure_phy(at86rf2xx_t *dev)
 {
     /* we must be in TRX_OFF before changing the PHY configuration */
-    uint8_t prev_state = at86rf2xx_set_state(dev, AT86RF215_STATE_RF_TRXOFF);
+    uint8_t prev_state = at86rf215_set_state(dev, AT86RF215_STATE_RF_TRXOFF);
 
     /* The TX power register must be updated after changing the channel if
      * moving between bands. */
@@ -157,7 +157,7 @@ void at86rf215_configure_phy(at86rf2xx_t *dev)
 	// TODO
 
     /* Return to the state we had before reconfiguring */
-    at86rf2xx_set_state(dev, prev_state);
+    at86rf215_set_state(dev, prev_state);
 }
 
 #if defined(MODULE_AT86RF233) || defined(MODULE_AT86RF231)

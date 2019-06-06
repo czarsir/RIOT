@@ -130,7 +130,7 @@ void at86rf215_reset(at86rf2xx_t *dev)
 	/********* State Machine *********/
 	DEBUG("[rf215] -- reset : set state (TODO: stay TRXOFF)\n");
     /* go into RX state ? or TXPREP ? or stay TRXOFF ? */
-    //at86rf2xx_set_state(dev, AT86RF2XX_STATE_RX_AACK_ON);
+    //at86rf215_set_state(dev, AT86RF2XX_STATE_RX_AACK_ON);
 
     DEBUG("[rf215] -- reset : complete.\n");
 }
@@ -156,7 +156,7 @@ void at86rf2xx_tx_prepare(at86rf2xx_t *dev)
 
     dev->pending_tx++;
 	//DEBUG("[rf215] -- tx_prepare : set state (TX ARET ON)\n");
-    //state = at86rf2xx_set_state(dev, AT86RF2XX_STATE_TX_ARET_ON);
+    //state = at86rf215_set_state(dev, AT86RF2XX_STATE_TX_ARET_ON);
 
 	/*** CCATX enable ***/
 	//uint8_t tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_AMCS);
@@ -222,14 +222,14 @@ void at86rf2xx_tx_exec(const at86rf2xx_t *dev)
 bool at86rf2xx_cca(at86rf2xx_t *dev)
 {
     uint8_t reg;
-    uint8_t old_state = at86rf2xx_set_state(dev, AT86RF215_STATE_RF_TXPREP);
+    uint8_t old_state = at86rf215_set_state(dev, AT86RF215_STATE_RF_TXPREP);
     /* Disable RX path */
     uint8_t rx_syn = at86rf215_reg_read(dev, AT86RF2XX_REG__RX_SYN);
 
     reg = rx_syn | AT86RF2XX_RX_SYN__RX_PDT_DIS;
     at86rf215_reg_write(dev, AT86RF2XX_REG__RX_SYN, reg);
     /* Manually triggered CCA is only possible in RX_ON (basic operating mode) */
-    at86rf2xx_set_state(dev, AT86RF215_STATE_RF_RX);
+    at86rf215_set_state(dev, AT86RF215_STATE_RF_RX);
     /* Perform CCA */
     reg = at86rf215_reg_read(dev, AT86RF2XX_REG__PHY_CC_CCA);
     reg |= AT86RF2XX_PHY_CC_CCA_MASK__CCA_REQUEST;
@@ -243,7 +243,7 @@ bool at86rf2xx_cca(at86rf2xx_t *dev)
     /* re-enable RX */
     at86rf215_reg_write(dev, AT86RF2XX_REG__RX_SYN, rx_syn);
     /* Step back to the old state */
-    at86rf2xx_set_state(dev, AT86RF215_STATE_RF_TXPREP);
-    at86rf2xx_set_state(dev, old_state);
+    at86rf215_set_state(dev, AT86RF215_STATE_RF_TXPREP);
+    at86rf215_set_state(dev, old_state);
     return ret;
 }

@@ -48,8 +48,8 @@ void at86rf215_set_addr_long(at86rf2xx_t *dev, uint64_t addr)
 {
     for (int i = 0; i < 8; i++) {
         dev->netdev.long_addr[i] = (uint8_t)(addr >> (i * 8));
-        at86rf215_reg_write(dev, (AT86RF215_REG__IEEE_MACEA_0 + i),
-                            (addr >> ((7 - i) * 8)));
+        at86rf215_reg_write(dev, (AT86RF215_REG__IEEE_MACEA_0 + i), (addr >> ((7 - i) * 8)));
+		//at86rf215_reg_write(dev, (AT86RF215_REG__IEEE_MACEA_0 + i), (addr >> (i * 8)));
     }
 }
 
@@ -74,13 +74,13 @@ void at86rf215_set_chan(at86rf2xx_t *dev, uint8_t channel)
     at86rf215_configure_phy(dev);
 }
 
-uint8_t at86rf2xx_get_page(const at86rf2xx_t *dev)
+uint8_t at86rf215_get_page(const at86rf2xx_t *dev)
 {
     (void) dev;
     return 0;
 }
 
-void at86rf2xx_set_page(at86rf2xx_t *dev, uint8_t page)
+void at86rf215_set_page(at86rf2xx_t *dev, uint8_t page)
 {
     (void) dev;
     (void) page;
@@ -115,8 +115,7 @@ void at86rf215_set_txpower(const at86rf2xx_t *dev, int16_t txpower)
 
     if (txpower < 0) {
         txpower = 0;
-    }
-    else if (txpower > AT86RF215_TXPOWER_MAX) {
+    } else if (txpower > AT86RF215_TXPOWER_MAX) {
         txpower = AT86RF215_TXPOWER_MAX;
     }
 
@@ -229,7 +228,7 @@ void at86rf2xx_set_option(at86rf2xx_t *dev, uint16_t option, bool state)
 {
     uint8_t tmp;
 
-    DEBUG("[rf215] set option %i to %s\n", option, (state ? "true" : "false"));
+    DEBUG("[rf215] set option 0x%x to %s\n", option, (state ? "true" : "false"));
 
     /* set option field */
     dev->netdev.flags = (state) ? (dev->netdev.flags |  option)
@@ -388,73 +387,52 @@ void at86rf215_set_bbc(at86rf2xx_t *dev)
 	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_FSKPHRTX, tmp);
 }
 
-/**
- * @brief Internal function to change state
- * @details For all cases but AT86RF2XX_STATE_FORCE_TRX_OFF state and
- *          cmd parameter are the same.
- *
- * @param dev       device to operate on
- * @param state     target state
- * @param cmd       command to initiate state transition
- */
+/********* State *********/
 
-static inline void _set_state(at86rf2xx_t *dev, uint8_t state, uint8_t cmd)
+static inline void _set_state(at86rf2xx_t *dev, uint8_t state)
 {
-    at86rf215_reg_write(dev, AT86RF215_REG__RF09_CMD, cmd);
+    at86rf215_reg_write(dev, AT86RF215_REG__RF09_CMD, state);
 
-    /* To prevent a possible race condition when changing to
-     * RX_AACK_ON state the state doesn't get read back in that
-     * case. See discussion
-     * in https://github.com/RIOT-OS/RIOT/pull/5244
-     */
-    if (state != AT86RF2XX_STATE_RX_AACK_ON) {
-		DEBUG("[rf215] -- -- -- set_state 1\n");
-        while (at86rf215_get_state(dev) != state) {}
-    }
-    /* Although RX_AACK_ON state doesn't get read back,
-     * at least make sure if state transition is in progress or not
-     */
-    else {
-		DEBUG("[rf215] -- -- -- set_state 2\n");
-        while (at86rf215_get_state(dev) == AT86RF215_STATE_RF_TRANSITION) {}
-    }
+    /* possible race condition in RX_AACK_ON state ??? */
+	while (at86rf215_get_state(dev) != state) {}
 
     dev->state = state;
 }
 
-uint8_t at86rf2xx_set_state(at86rf2xx_t *dev, uint8_t state)
+uint8_t at86rf215_set_state(at86rf2xx_t *dev, uint8_t state)
 {
     uint8_t old_state;
 
 	DEBUG("[rf215] -- -- set_state 0x%x\n", state);
-    /* make sure there is no ongoing transmission, or state transition already
-     * in progress */
+
+	/* make sure there is no ongoing transmission */
+	/* or state transition already in progress */
     do {
         old_state = at86rf215_get_state(dev);
-    } while (old_state == AT86RF2XX_STATE_BUSY_RX_AACK ||
-             old_state == AT86RF2XX_STATE_BUSY_TX_ARET ||
-             old_state == AT86RF215_STATE_RF_TRANSITION);
+    } while (old_state == AT86RF215_STATE_RF_TRANSITION);
+
+	if (state == old_state) {
+		return old_state;
+	}
 
     if (state == AT86RF215_STATE_RF_TRXOFF) {
 		DEBUG("[rf215] -- -- set_state : TRX_OFF\n");
-		_set_state(dev, AT86RF215_STATE_RF_TRXOFF, AT86RF215_STATE_RF_TRXOFF);
-        //_set_state(dev, AT86RF2XX_STATE_TRX_OFF, state);
+		_set_state(dev, AT86RF215_STATE_RF_TRXOFF);
     }
-    else if (state != old_state) {
-        /* we need to go via PLL_ON if we are moving between RX_AACK_ON <-> TX_ARET_ON */
-        if ((old_state == AT86RF2XX_STATE_RX_AACK_ON &&
-             state == AT86RF2XX_STATE_TX_ARET_ON) ||
-            (old_state == AT86RF2XX_STATE_TX_ARET_ON &&
-             state == AT86RF2XX_STATE_RX_AACK_ON)) {
-            _set_state(dev, AT86RF215_STATE_RF_TXPREP, AT86RF215_STATE_RF_TXPREP);
+    else {
+        /* RX <-> TX */
+        if ((old_state == AT86RF215_STATE_RF_TX && state == AT86RF215_STATE_RF_RX) ||
+			(old_state == AT86RF215_STATE_RF_RX && state == AT86RF215_STATE_RF_TX)) {
+            _set_state(dev, AT86RF215_STATE_RF_TXPREP);
         }
         /* check if we need to wake up from sleep mode */
         if (state == AT86RF215_STATE_RF_SLEEP) {
             /* First go to TRX_OFF */
-            _set_state(dev, AT86RF215_STATE_RF_TRXOFF,
-                       AT86RF215_STATE_RF_TRXOFF);
-            /* Discard all IRQ flags, framebuffer is lost anyway */
-            at86rf215_reg_read(dev, AT86RF2XX_REG__IRQ_STATUS);
+            _set_state(dev, AT86RF215_STATE_RF_TRXOFF);
+            /* clear IRQ */
+			at86rf215_reg_read(dev, AT86RF215_REG__RF09_IRQS);
+			//at86rf215_reg_read(dev, AT86RF215_REG__BBC0_IRQS);
+			at86rf215_reg_read(dev, AT86RF215_REG__RF24_IRQS);
             /* Go to SLEEP mode from TRX_OFF */
             gpio_set(dev->params.sleep_pin);
             dev->state = state;
@@ -464,7 +442,7 @@ uint8_t at86rf2xx_set_state(at86rf2xx_t *dev, uint8_t state)
                 DEBUG("at86rf2xx: waking up from sleep mode\n");
                 at86rf215_assert_awake(dev);
             }
-            _set_state(dev, state, state);
+            _set_state(dev, state);
         }
     }
 

@@ -150,21 +150,24 @@ uint16_t at86rf215_get_addr_short(const at86rf2xx_t *dev);
 void at86rf215_set_addr_short(at86rf2xx_t *dev, uint16_t addr);
 /*** long address ***/
 uint64_t at86rf215_get_addr_long(const at86rf2xx_t *dev);
+
+// TODO test: address reverse???
 void at86rf215_set_addr_long(at86rf2xx_t *dev, uint64_t addr);
 
+// TODO
 /*** channel number ***/
 uint8_t at86rf215_get_chan(const at86rf2xx_t *dev);
 void at86rf215_set_chan(at86rf2xx_t *dev, uint8_t chan);
 
-// TODO
-/*** channel page ***/
-uint8_t at86rf2xx_get_page(const at86rf2xx_t *dev);
-void at86rf2xx_set_page(at86rf2xx_t *dev, uint8_t page);
+/*** channel page (NOT support) ***/
+uint8_t at86rf215_get_page(const at86rf2xx_t *dev);
+void at86rf215_set_page(at86rf2xx_t *dev, uint8_t page);
 
 /*** PAN ID ***/
 uint16_t at86rf215_get_pan(const at86rf2xx_t *dev);
 void at86rf215_set_pan(at86rf2xx_t *dev, uint16_t pan);
 
+// TODO
 /*** transmission power [dBm] ***/
 int16_t at86rf215_get_txpower(const at86rf2xx_t *dev);
 void at86rf215_set_txpower(const at86rf2xx_t *dev, int16_t txpower);
@@ -205,8 +208,7 @@ int8_t at86rf2xx_get_ed_level(at86rf2xx_t *dev);
 
 /********* State *********/
 
-// TODO
-uint8_t at86rf2xx_set_state(at86rf2xx_t *dev, uint8_t state);
+uint8_t at86rf215_set_state(at86rf2xx_t *dev, uint8_t state);
 
 /********* Option *********/
 

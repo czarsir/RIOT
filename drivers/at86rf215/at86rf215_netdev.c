@@ -62,7 +62,7 @@ static void _irq_handler(void *arg)
 //		puts("[rf215] irq_handler : Rx end.\n");
 //	}
 
-	//at86rf2xx_set_state(dd, AT86RF215_STATE_RF_RX);
+	//at86rf215_set_state(dd, AT86RF215_STATE_RF_RX);
 	at86rf215_reg_write(dd, AT86RF215_REG__RF09_CMD, AT86RF215_STATE_RF_RX);
 
 	if (dev->event_callback) {
@@ -228,14 +228,14 @@ static int _set_state(at86rf2xx_t *dev, netopt_state_t state)
 {
     switch (state) {
         case NETOPT_STATE_STANDBY:
-            at86rf2xx_set_state(dev, AT86RF215_STATE_RF_TRXOFF);
+            at86rf215_set_state(dev, AT86RF215_STATE_RF_TRXOFF);
             break;
         case NETOPT_STATE_SLEEP:
-            at86rf2xx_set_state(dev, AT86RF215_STATE_RF_SLEEP);
+            at86rf215_set_state(dev, AT86RF215_STATE_RF_SLEEP);
             break;
         case NETOPT_STATE_IDLE:
-            //at86rf2xx_set_state(dev, AT86RF2XX_STATE_RX_AACK_ON);
-			at86rf2xx_set_state(dev, AT86RF215_STATE_RF_RX);
+            //at86rf215_set_state(dev, AT86RF2XX_STATE_RX_AACK_ON);
+			at86rf215_set_state(dev, AT86RF215_STATE_RF_RX);
             break;
         case NETOPT_STATE_TX:
             if (dev->netdev.flags & AT86RF2XX_OPT_PRELOADING) {
@@ -255,7 +255,7 @@ static int _set_state(at86rf2xx_t *dev, netopt_state_t state)
                      * know when to switch back to the idle state. */
                     ++dev->pending_tx;
                 }
-                at86rf2xx_set_state(dev, AT86RF2XX_STATE_TX_ARET_ON);
+                at86rf215_set_state(dev, AT86RF2XX_STATE_TX_ARET_ON);
                 at86rf2xx_tx_exec(dev);
             }
             break;
@@ -300,7 +300,7 @@ static int _get(netdev_t *netdev, netopt_t opt, void *val, size_t max_len)
         case NETOPT_CHANNEL_PAGE:
             assert(max_len >= sizeof(uint16_t));
             ((uint8_t *)val)[1] = 0;
-            ((uint8_t *)val)[0] = at86rf2xx_get_page(dev);
+            ((uint8_t *)val)[0] = at86rf215_get_page(dev);
             return sizeof(uint16_t);
 
         case NETOPT_MAX_PACKET_SIZE:
@@ -435,7 +435,7 @@ static int _get(netdev_t *netdev, netopt_t opt, void *val, size_t max_len)
 
     /* go back to sleep if were sleeping */
     if (old_state == AT86RF215_STATE_RF_SLEEP) {
-        at86rf2xx_set_state(dev, AT86RF215_STATE_RF_SLEEP);
+        at86rf215_set_state(dev, AT86RF215_STATE_RF_SLEEP);
     }
 
     return res;
@@ -453,7 +453,7 @@ static int _set(netdev_t *netdev, netopt_t opt, const void *val, size_t len)
 
     /* temporarily wake up if sleeping and opt != NETOPT_STATE.
      * opt != NETOPT_STATE check prevents redundant wake-up.
-     * when opt == NETOPT_STATE, at86rf2xx_set_state() will wake up the
+     * when opt == NETOPT_STATE, at86rf215_set_state() will wake up the
      * radio if needed. */
     if ((old_state == AT86RF215_STATE_RF_SLEEP) && (opt != NETOPT_STATE)) {
         at86rf215_assert_awake(dev);
@@ -498,7 +498,7 @@ static int _set(netdev_t *netdev, netopt_t opt, const void *val, size_t len)
                 res = -EINVAL;
             }
             else {
-                at86rf2xx_set_page(dev, page);
+                at86rf215_set_page(dev, page);
                 res = sizeof(uint16_t);
             }
 #else
@@ -609,7 +609,7 @@ static int _set(netdev_t *netdev, netopt_t opt, const void *val, size_t len)
     /* go back to sleep if were sleeping and state hasn't been changed */
     if ((old_state == AT86RF215_STATE_RF_SLEEP)
         && (opt != NETOPT_STATE)) {
-        at86rf2xx_set_state(dev, AT86RF215_STATE_RF_SLEEP);
+        at86rf215_set_state(dev, AT86RF215_STATE_RF_SLEEP);
     }
 
     if (res == -ENOTSUP) {
@@ -660,7 +660,7 @@ static void _isr(netdev_t *netdev)
 //             * there are none */
 //            assert(dev->pending_tx != 0);
 //            if ((--dev->pending_tx) == 0) {
-//                at86rf2xx_set_state(dev, dev->idle_state);
+//                at86rf215_set_state(dev, dev->idle_state);
 //                DEBUG("[at86rf2xx] return to idle state 0x%x\n", dev->idle_state);
 //            }
 ///* Only radios with the XAH_CTRL_2 register support frame retry reporting */

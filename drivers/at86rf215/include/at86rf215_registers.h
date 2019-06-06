@@ -75,16 +75,19 @@ extern "C" {
 #define AT86RF215_REG__BBC0_TXFLL                               (0x0306)
 #define AT86RF215_REG__BBC0_TXFLH                               (0x0307)
 #define AT86RF215_REG__BBC0_AFC0                                (0x0320)
-/* IEEE */
+
+/****** IEEE ******/
 #define AT86RF215_REG__IEEE_MACEA_0                             (0x0325)
 //#define AT86RF215_REG__IEEE_MACEA_1                             (0x0326)
 #define AT86RF215_REG__IEEE_MACPID0_0                           (0x032D)
 #define AT86RF215_REG__IEEE_MACPID0_1                           (0x032E)
 #define AT86RF215_REG__IEEE_MACSHA0_0                           (0x032F)
 #define AT86RF215_REG__IEEE_MACSHA0_1                           (0x0330)
+
 /* Auto Mode */
 #define AT86RF215_REG__BBC0_AMCS                                (0x0340)
-/* FSK */
+
+/****** FSK ******/
 #define AT86RF215_REG__BBC0_FSKC0                               (0x0360)
 #define AT86RF215_REG__BBC0_FSKC1                               (0x0361)
 #define AT86RF215_REG__BBC0_FSKC2                               (0x0362)
@@ -160,10 +163,12 @@ extern "C" {
 
 /****** Mask ***************************************/
 
+/*** RF ***/
 #define AT86RF215_RFn_STATE_MASK                                (0x07)
 #define AT86RF215_RFn_DRV_MASK                                  (0x03)
 #define AT86RF215_RFn_TX_PWR_MASK                               (0x1F)
 #define AT86RF215_RFn_AGC_TGT_M                                 (0xE0)
+/*** BBC ***/
 #define AT86RF215_BBCn_IRQS__TXFE_M                             (0x10)
 #define AT86RF215_BBCn_IRQS__RXFE_M                             (0x02)
 #define AT86RF215_BBCn_IRQS__RXFS_M                             (0x01)
