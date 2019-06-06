@@ -43,30 +43,28 @@ extern "C" {
 uint8_t at86rf215_reg_read(const at86rf2xx_t *dev, uint16_t addr);
 void at86rf215_reg_write(const at86rf2xx_t *dev, uint16_t addr, uint8_t value);
 
-// TODO
-/*** SRAM ***/
-void at86rf2xx_sram_write(const at86rf2xx_t *dev, uint8_t offset,
+/*** TX Frame Buffer ***/
+void at86rf215_txfb_write(const at86rf2xx_t *dev, uint8_t offset,
                           const uint8_t *data, size_t len);
 
-/*** internal Frame Buffer ***/
-void at86rf215_fb_start(const at86rf2xx_t *dev);
-void at86rf215_fb_read(const at86rf2xx_t *dev, uint8_t *data, size_t len);
-void at86rf215_fb_stop(const at86rf2xx_t *dev);
+/*** RX Frame Buffer ***/
+void at86rf215_rxfb_start(const at86rf2xx_t *dev);
+void at86rf215_rxfb_read(const at86rf2xx_t *dev, uint8_t *data, size_t len);
+void at86rf215_rxfb_stop(const at86rf2xx_t *dev);
 
 /********* Config *********/
 
+// TODO
 /* config PHY parameters */
 void at86rf215_configure_phy(at86rf2xx_t *dev);
 
 /********* State *********/
 
-// TODO
-/* Convenience function for reading the status */
-uint8_t at86rf2xx_get_status(const at86rf2xx_t *dev);
+/* Get state */
+uint8_t at86rf215_get_state(const at86rf2xx_t *dev);
 
-// TODO
 /* Make sure that device is not sleeping */
-void at86rf2xx_assert_awake(at86rf2xx_t *dev);
+void at86rf215_assert_awake(at86rf2xx_t *dev);
 
 /********* Operation *********/
 

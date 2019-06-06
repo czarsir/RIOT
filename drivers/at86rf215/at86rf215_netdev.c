@@ -136,7 +136,7 @@ static int _send(netdev_t *netdev, const iolist_t *iolist)
         netdev->stats.tx_bytes += len;
 #endif
 		//DEBUG("[rf215] send : tx load\n");
-        len = at86rf2xx_tx_load(dev, iol->iol_base, iol->iol_len, len);
+        len = at86rf215_tx_load(dev, len, iol->iol_base, iol->iol_len);
     }
 
     /* send data out directly if pre-loading id disabled */
@@ -168,56 +168,56 @@ static int _recv(netdev_t *netdev, void *buf, size_t len, void *info)
 
 	//DEBUG("[rf215] recv : pkt_len %u.\n", pkt_len);
 
-    /* frame buffer protection will be unlocked as soon as at86rf215_fb_stop()
+    /* frame buffer protection will be unlocked as soon as at86rf215_rxfb_stop()
      * is called*/
-    //at86rf215_fb_start(dev);
+    //at86rf215_rxfb_start(dev);
 
     /* get the size of the received packet */
-    //at86rf215_fb_read(dev, &phr, 1);
+    //at86rf215_rxfb_read(dev, &phr, 1);
 
     /* ignore MSB (refer p.80) and substract length of FCS field */
     //pkt_len = (phr & 0x7f) - 2;
 
     /* just return length when buf == NULL */
     if (buf == NULL) {
-        //at86rf215_fb_stop(dev);
+        //at86rf215_rxfb_stop(dev);
 		//DEBUG("[rf215] recv : complete (length).\n");
         return pkt_len;
     }
     /* not enough space in buf */
     if (pkt_len > len) {
-        //at86rf215_fb_stop(dev);
+        //at86rf215_rxfb_stop(dev);
         return -ENOBUFS;
     }
 #ifdef MODULE_NETSTATS_L2
     netdev->stats.rx_count++;
     netdev->stats.rx_bytes += pkt_len;
 #endif
-	at86rf215_fb_start(dev);
+	at86rf215_rxfb_start(dev);
     /* copy payload */
-    at86rf215_fb_read(dev, (uint8_t *)buf, pkt_len);
+    at86rf215_rxfb_read(dev, (uint8_t *)buf, pkt_len);
 
     /* Ignore FCS but advance fb read - we must give a temporary buffer here,
      * as we are not allowed to issue SPI transfers without any buffer */
     uint8_t tmp[2];
-    at86rf215_fb_read(dev, tmp, 2);
+    at86rf215_rxfb_read(dev, tmp, 2);
     (void)tmp;
 
     if (info != NULL) {
         uint8_t rssi = 0;
         netdev_ieee802154_rx_info_t *radio_info = info;
-        at86rf215_fb_read(dev, &(radio_info->lqi), 1);
+        at86rf215_rxfb_read(dev, &(radio_info->lqi), 1);
 #ifndef MODULE_AT86RF231
-        at86rf215_fb_read(dev, &(rssi), 1);
-        at86rf215_fb_stop(dev);
+        at86rf215_rxfb_read(dev, &(rssi), 1);
+        at86rf215_rxfb_stop(dev);
 #else
-        at86rf215_fb_stop(dev);
+        at86rf215_rxfb_stop(dev);
         rssi = at86rf215_reg_read(dev, AT86RF2XX_REG__PHY_ED_LEVEL);
 #endif
         radio_info->rssi = RSSI_BASE_VAL + rssi;
     }
     else {
-        at86rf215_fb_stop(dev);
+        at86rf215_rxfb_stop(dev);
     }
 
 	DEBUG("[rf215] recv : complete.\n");
@@ -270,8 +270,8 @@ static int _set_state(at86rf2xx_t *dev, netopt_state_t state)
 
 netopt_state_t _get_state(at86rf2xx_t *dev)
 {
-	DEBUG("[rf215] _get_state : 0x%x \n", at86rf2xx_get_status(dev));
-    switch (at86rf2xx_get_status(dev)) {
+	DEBUG("[rf215] _get_state : 0x%x \n", at86rf215_get_state(dev));
+    switch (at86rf215_get_state(dev)) {
         case AT86RF215_STATE_RF_SLEEP:
             return NETOPT_STATE_SLEEP;
         case AT86RF215_STATE_RF_TRXOFF:
@@ -376,11 +376,11 @@ static int _get(netdev_t *netdev, netopt_t opt, void *val, size_t max_len)
         return res;
     }
 
-    uint8_t old_state = at86rf2xx_get_status(dev);
+    uint8_t old_state = at86rf215_get_state(dev);
 
     /* temporarily wake up if sleeping */
     if (old_state == AT86RF215_STATE_RF_SLEEP) {
-        at86rf2xx_assert_awake(dev);
+        at86rf215_assert_awake(dev);
     }
 
     /* these options require the transceiver to be not sleeping*/
@@ -444,7 +444,7 @@ static int _get(netdev_t *netdev, netopt_t opt, void *val, size_t max_len)
 static int _set(netdev_t *netdev, netopt_t opt, const void *val, size_t len)
 {
     at86rf2xx_t *dev = (at86rf2xx_t *) netdev;
-    uint8_t old_state = at86rf2xx_get_status(dev);
+    uint8_t old_state = at86rf215_get_state(dev);
     int res = -ENOTSUP;
 
     if (dev == NULL) {
@@ -456,7 +456,7 @@ static int _set(netdev_t *netdev, netopt_t opt, const void *val, size_t len)
      * when opt == NETOPT_STATE, at86rf2xx_set_state() will wake up the
      * radio if needed. */
     if ((old_state == AT86RF215_STATE_RF_SLEEP) && (opt != NETOPT_STATE)) {
-        at86rf2xx_assert_awake(dev);
+        at86rf215_assert_awake(dev);
     }
 
     switch (opt) {
@@ -629,7 +629,7 @@ static void _isr(netdev_t *netdev)
     /* If transceiver is sleeping register access is impossible and frames are
      * lost anyway, so return immediately.
      */
-    state = at86rf2xx_get_status(dev);
+    state = at86rf215_get_state(dev);
     if (state == AT86RF215_STATE_RF_SLEEP) {
         return;
     }

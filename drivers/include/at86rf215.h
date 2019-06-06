@@ -74,10 +74,6 @@ extern "C" {
 #define AT86RF215_STATE_RF_TRANSITION      (0x06) // only as state
 #define AT86RF215_STATE_RF_RESET           (0x07)
 
-/****** RF command ******/
-#define AT86RF215_CMD_RF_NOP               (0x00)
-#define AT86RF215_CMD_RF_TRX_OFF           (0x02)
-
 // TODO
 /*** extended mode ***/
 #define AT86RF2XX_STATE_BUSY_RX_AACK   (0x11)     /**< busy receiving data (extended mode) */
@@ -231,7 +227,7 @@ size_t at86rf2xx_send(at86rf2xx_t *dev, const uint8_t *data, size_t len);
 /*** Prepare, turn to TX state ***/
 void at86rf2xx_tx_prepare(at86rf2xx_t *dev);
 /*** Load chunks of data into the transmit buffer ***/
-size_t at86rf2xx_tx_load(at86rf2xx_t *dev, const uint8_t *data, size_t len, size_t offset);
+size_t at86rf215_tx_load(at86rf2xx_t *dev, size_t offset, const uint8_t *data, size_t len);
 /*** Trigger sending ***/
 void at86rf2xx_tx_exec(const at86rf2xx_t *dev);
 

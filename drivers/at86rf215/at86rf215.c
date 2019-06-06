@@ -143,7 +143,7 @@ size_t at86rf2xx_send(at86rf2xx_t *dev, const uint8_t *data, size_t len)
         return 0;
     }
     at86rf2xx_tx_prepare(dev);
-    at86rf2xx_tx_load(dev, data, len, 0);
+    at86rf215_tx_load(dev, 0, data, len);
     at86rf2xx_tx_exec(dev);
     return len;
 }
@@ -170,11 +170,11 @@ void at86rf2xx_tx_prepare(at86rf2xx_t *dev)
 	//DEBUG("[rf215] -- tx_prepare : complete.\n");
 }
 
-size_t at86rf2xx_tx_load(at86rf2xx_t *dev, const uint8_t *data,
-                         size_t len, size_t offset)
+size_t at86rf215_tx_load(at86rf2xx_t *dev, size_t offset,
+                         const uint8_t *data, size_t len)
 {
     dev->tx_frame_len += (uint8_t)len;
-    at86rf2xx_sram_write(dev, offset + 1, data, len);
+    at86rf215_txfb_write(dev, offset, data, len);
     return offset + len;
 }
 
@@ -183,8 +183,7 @@ void at86rf2xx_tx_exec(const at86rf2xx_t *dev)
     netdev_t *netdev = (netdev_t *)dev;
 	uint8_t tmp;
 
-    /* write frame length field in FIFO */
-    //at86rf2xx_sram_write(dev, 0, &(dev->tx_frame_len), 1);
+    /* set frame length */
 	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_TXFLH, 0);
 	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_TXFLL, dev->tx_frame_len);
 

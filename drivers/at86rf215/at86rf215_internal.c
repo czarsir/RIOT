@@ -43,25 +43,16 @@ uint8_t at86rf215_reg_read(const at86rf2xx_t *dev, uint16_t addr)
 	/*** must be MSB first ***/
 	spi_transfer_byte(SPIDEV, CSPIN, true, (uint8_t)(cmd>>8));
 	spi_transfer_byte(SPIDEV, CSPIN, true, (uint8_t)(cmd));
-	//spi_transfer_bytes(SPIDEV, CSPIN, true, &cmd, NULL, 2);
 	value = spi_transfer_byte(SPIDEV, CSPIN, false, 0);
     spi_release(SPIDEV);
 
     return value;
 }
 
-void at86rf2xx_sram_write(const at86rf2xx_t *dev, uint8_t offset,
+void at86rf215_txfb_write(const at86rf2xx_t *dev, uint8_t offset,
                           const uint8_t *data, size_t len)
 {
-//    uint8_t reg = (AT86RF2XX_ACCESS_SRAM | AT86RF2XX_ACCESS_WRITE);
-//
-//    getbus(dev);
-//    spi_transfer_byte(SPIDEV, CSPIN, true, reg);
-//    spi_transfer_byte(SPIDEV, CSPIN, true, offset);
-//    spi_transfer_bytes(SPIDEV, CSPIN, false, data, NULL, len);
-//    spi_release(SPIDEV);
-
-	uint16_t cmd = (AT86RF215_ACCESS_WRITE | (AT86RF215_REG__BBC0_FBTXS - 1 + offset));
+	uint16_t cmd = (AT86RF215_ACCESS_WRITE | (AT86RF215_REG__BBC0_FBTXS + offset));
 
 	getbus(dev);
 	spi_transfer_byte(SPIDEV, CSPIN, true, (uint8_t)(cmd>>8));
@@ -70,31 +61,28 @@ void at86rf2xx_sram_write(const at86rf2xx_t *dev, uint8_t offset,
 	spi_release(SPIDEV);
 }
 
-void at86rf215_fb_start(const at86rf2xx_t *dev)
+void at86rf215_rxfb_start(const at86rf2xx_t *dev)
 {
-    //uint8_t reg = AT86RF2XX_ACCESS_FB | AT86RF2XX_ACCESS_READ;
 	uint16_t cmd = (AT86RF215_ACCESS_READ | AT86RF215_REG__BBC0_FBRXS);
 
     getbus(dev);
-    //spi_transfer_byte(SPIDEV, CSPIN, true, reg);
 	spi_transfer_byte(SPIDEV, CSPIN, true, (uint8_t)(cmd>>8));
 	spi_transfer_byte(SPIDEV, CSPIN, true, (uint8_t)(cmd));
 }
 
-void at86rf215_fb_read(const at86rf2xx_t *dev,
-                       uint8_t *data, size_t len)
+void at86rf215_rxfb_read(const at86rf2xx_t *dev, uint8_t *data, size_t len)
 {
     spi_transfer_bytes(SPIDEV, CSPIN, true, NULL, data, len);
 }
 
-void at86rf215_fb_stop(const at86rf2xx_t *dev)
+void at86rf215_rxfb_stop(const at86rf2xx_t *dev)
 {
     /* transfer one byte (which we ignore) to release the chip select */
     spi_transfer_byte(SPIDEV, CSPIN, false, 1);
     spi_release(SPIDEV);
 }
 
-uint8_t at86rf2xx_get_status(const at86rf2xx_t *dev)
+uint8_t at86rf215_get_state(const at86rf2xx_t *dev)
 {
     /* if sleeping immediately return state */
     if (dev->state == AT86RF215_STATE_RF_SLEEP) {
@@ -105,18 +93,13 @@ uint8_t at86rf2xx_get_status(const at86rf2xx_t *dev)
             & AT86RF215_RFn_STATE_MASK);
 }
 
-void at86rf2xx_assert_awake(at86rf2xx_t *dev)
+void at86rf215_assert_awake(at86rf2xx_t *dev)
 {
-    if (at86rf2xx_get_status(dev) == AT86RF215_STATE_RF_SLEEP) {
+    if (at86rf215_get_state(dev) == AT86RF215_STATE_RF_SLEEP) {
         /* wake up and wait for transition to TRX_OFF */
         gpio_clear(dev->params.sleep_pin);
         xtimer_usleep(AT86RF215_WAKEUP_DELAY);
 
-        /* update state: on some platforms, the timer behind xtimer
-         * may be inaccurate or the radio itself may take longer
-         * to wake up due to extra capacitance on the oscillator.
-         * Spin until we are actually awake
-         */
         do {
             dev->state = at86rf215_reg_read(dev, AT86RF215_REG__RF09_STATE)
                          & AT86RF215_RFn_STATE_MASK;
@@ -139,23 +122,17 @@ void at86rf215_hardware_reset(at86rf2xx_t *dev)
 					& AT86RF215_RFn_STATE_MASK;
 	DEBUG("[rf215] -- -- hardware_reset : state 0x%x\n", dev->state);
 
-    /* update state: if the radio state was P_ON (initialization phase),
-     * it remains P_ON. Otherwise, it should go to TRX_OFF
-	 *
-	 * at86rf215: automatically end up in state TRXOFF.
-     */
+    /* at86rf215: automatically end up in state TRXOFF */
     do {
         dev->state = at86rf215_reg_read(dev, AT86RF215_REG__RF09_STATE)
                      & AT86RF215_RFn_STATE_MASK;
 	} while (dev->state != AT86RF215_STATE_RF_TRXOFF);
-    //} while ((dev->state != AT86RF215_STATE_RF_TRXOFF)
-    //         && (dev->state != AT86RF215_STATE_RF_RESET));
 }
 
 void at86rf215_configure_phy(at86rf2xx_t *dev)
 {
     /* we must be in TRX_OFF before changing the PHY configuration */
-    uint8_t prev_state = at86rf2xx_set_state(dev, AT86RF215_CMD_RF_TRX_OFF);
+    uint8_t prev_state = at86rf2xx_set_state(dev, AT86RF215_STATE_RF_TRXOFF);
 
     /* The TX power register must be updated after changing the channel if
      * moving between bands. */

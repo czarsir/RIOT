@@ -409,14 +409,14 @@ static inline void _set_state(at86rf2xx_t *dev, uint8_t state, uint8_t cmd)
      */
     if (state != AT86RF2XX_STATE_RX_AACK_ON) {
 		DEBUG("[rf215] -- -- -- set_state 1\n");
-        while (at86rf2xx_get_status(dev) != state) {}
+        while (at86rf215_get_state(dev) != state) {}
     }
     /* Although RX_AACK_ON state doesn't get read back,
      * at least make sure if state transition is in progress or not
      */
     else {
 		DEBUG("[rf215] -- -- -- set_state 2\n");
-        while (at86rf2xx_get_status(dev) == AT86RF215_STATE_RF_TRANSITION) {}
+        while (at86rf215_get_state(dev) == AT86RF215_STATE_RF_TRANSITION) {}
     }
 
     dev->state = state;
@@ -430,14 +430,14 @@ uint8_t at86rf2xx_set_state(at86rf2xx_t *dev, uint8_t state)
     /* make sure there is no ongoing transmission, or state transition already
      * in progress */
     do {
-        old_state = at86rf2xx_get_status(dev);
+        old_state = at86rf215_get_state(dev);
     } while (old_state == AT86RF2XX_STATE_BUSY_RX_AACK ||
              old_state == AT86RF2XX_STATE_BUSY_TX_ARET ||
              old_state == AT86RF215_STATE_RF_TRANSITION);
 
-    if (state == AT86RF215_CMD_RF_TRX_OFF) {
+    if (state == AT86RF215_STATE_RF_TRXOFF) {
 		DEBUG("[rf215] -- -- set_state : TRX_OFF\n");
-		_set_state(dev, AT86RF215_STATE_RF_TRXOFF, AT86RF215_CMD_RF_TRX_OFF);
+		_set_state(dev, AT86RF215_STATE_RF_TRXOFF, AT86RF215_STATE_RF_TRXOFF);
         //_set_state(dev, AT86RF2XX_STATE_TRX_OFF, state);
     }
     else if (state != old_state) {
@@ -462,7 +462,7 @@ uint8_t at86rf2xx_set_state(at86rf2xx_t *dev, uint8_t state)
         else {
             if (old_state == AT86RF215_STATE_RF_SLEEP) {
                 DEBUG("at86rf2xx: waking up from sleep mode\n");
-                at86rf2xx_assert_awake(dev);
+                at86rf215_assert_awake(dev);
             }
             _set_state(dev, state, state);
         }
