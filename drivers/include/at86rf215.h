@@ -227,11 +227,11 @@ size_t at86rf2xx_send(at86rf2xx_t *dev, const uint8_t *data, size_t len);
 
 // TODO
 /*** Prepare, turn to TX state ***/
-void at86rf2xx_tx_prepare(at86rf2xx_t *dev);
+void at86rf215_tx_prepare(at86rf2xx_t *dev);
 /*** Load chunks of data into the transmit buffer ***/
 size_t at86rf215_tx_load(at86rf2xx_t *dev, size_t offset, const uint8_t *data, size_t len);
 /*** Trigger sending ***/
-void at86rf2xx_tx_exec(const at86rf2xx_t *dev);
+void at86rf215_tx_exec(const at86rf2xx_t *dev);
 
 // TODO
 /*** Perform one manual CCA ***/

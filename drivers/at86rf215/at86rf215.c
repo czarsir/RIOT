@@ -6,8 +6,10 @@
 
 #include "luid.h"
 #include "byteorder.h"
+
 #include "net/ieee802154.h"
 #include "net/gnrc.h"
+
 #include "at86rf215_registers.h"
 #include "at86rf215_internal.h"
 #include "at86rf215_netdev.h"
@@ -28,8 +30,8 @@ void at86rf215_setup(at86rf2xx_t *dev, const at86rf215_params_t *params)
     netdev->driver = &at86rf2xx_driver;
     /* initialize device descriptor */
     memcpy(&dev->params, params, sizeof(at86rf215_params_t));
-    dev->idle_state = AT86RF215_STATE_RF_TRXOFF;
-    /* radio state is P_ON when first powered-on */
+    dev->idle_state = AT86RF215_STATE_RF_RX;
+    /* radio state is RESET when first powered-on */
     dev->state = AT86RF215_STATE_RF_RESET;
     dev->pending_tx = 0;
 }
@@ -47,10 +49,9 @@ void at86rf215_reset(at86rf2xx_t *dev)
 	DEBUG("[rf215] -- reset : ieee reset\n");
     netdev_ieee802154_reset(&dev->netdev);
 
-
 	DEBUG("[rf215] -- reset : set config\n");
 
-	/********* common *********/
+	/********* Common *********/
 	/*** Clock Output: off ***/
 	tmp = 0x0;
 	at86rf215_reg_write(dev, AT86RF215_REG__RF_CLKO, tmp);
@@ -122,7 +123,7 @@ void at86rf215_reset(at86rf2xx_t *dev)
 //	at86rf215_reg_write(dev, AT86RF215_REG__RF_CFG, tmp);
 	//at86rf215_reg_write(dev, AT86RF215_REG__BBC0_IRQM, AT86RF215_BBCn_IRQM__RXFS_M);
 	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_IRQM, AT86RF215_BBCn_IRQM__RXFE_M);
-	/* clear interrupt flags */
+	/*** clear IRQs ***/
 	at86rf215_reg_read(dev, AT86RF215_REG__RF09_IRQS);
 	at86rf215_reg_read(dev, AT86RF215_REG__BBC0_IRQS);
 	at86rf215_reg_read(dev, AT86RF215_REG__RF24_IRQS);
@@ -139,20 +140,18 @@ size_t at86rf2xx_send(at86rf2xx_t *dev, const uint8_t *data, size_t len)
 {
     /* check data length */
     if (len > AT86RF215_MAX_PKT_LENGTH) {
-        DEBUG("[at86rf2xx] Error: data to send exceeds max packet size\n");
+        DEBUG("[rf215] Error: data to send exceeds max packet size\n");
         return 0;
     }
-    at86rf2xx_tx_prepare(dev);
+    at86rf215_tx_prepare(dev);
     at86rf215_tx_load(dev, 0, data, len);
-    at86rf2xx_tx_exec(dev);
+    at86rf215_tx_exec(dev);
     return len;
 }
 
-void at86rf2xx_tx_prepare(at86rf2xx_t *dev)
+void at86rf215_tx_prepare(at86rf2xx_t *dev)
 {
 //    uint8_t state;
-
-	//DEBUG("[rf215] -- tx_prepare \n");
 
     dev->pending_tx++;
 	//DEBUG("[rf215] -- tx_prepare : set state (TX ARET ON)\n");
@@ -178,7 +177,7 @@ size_t at86rf215_tx_load(at86rf2xx_t *dev, size_t offset,
     return offset + len;
 }
 
-void at86rf2xx_tx_exec(const at86rf2xx_t *dev)
+void at86rf215_tx_exec(const at86rf2xx_t *dev)
 {
     netdev_t *netdev = (netdev_t *)dev;
 	uint8_t tmp;
@@ -188,7 +187,7 @@ void at86rf2xx_tx_exec(const at86rf2xx_t *dev)
 	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_TXFLL, dev->tx_frame_len);
 
     /* trigger sending of pre-loaded frame */
-	DEBUG("[rf215] -- tx_exec : set state (TXPREP)\n");
+	//DEBUG("[rf215] -- tx_exec : set state (TXPREP)\n");
 	at86rf215_reg_write(dev, AT86RF215_REG__RF09_CMD, AT86RF215_STATE_RF_TXPREP);
 	do {
 		tmp = at86rf215_reg_read(dev, AT86RF215_REG__RF09_STATE)

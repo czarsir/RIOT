@@ -49,13 +49,12 @@ static void _irq_handler(void *arg)
 	/* use puts() instead of DEBUG(). stack too small */
 	puts("[rf215] irq_handler\n");
 
+	/*** test ***/
 //	uint8_t tmp = at86rf215_reg_read(dd, AT86RF215_REG__BBC0_IRQS);
 //	if(tmp & AT86RF215_BBCn_IRQS__RXFS_M) {
 //		puts("[rf215] irq_handler : Rx start.\n");
-//		LED1_TOGGLE;
 //	} else {
 //		puts("[rf215] irq_handler : others.\n");
-//		LED2_TOGGLE;
 //	}
 //
 //	if(tmp & AT86RF215_BBCn_IRQS__RXFE_M) {
@@ -98,11 +97,10 @@ static int _init(netdev_t *netdev)
 
 	/*** ISR ***/
 	gpio_init_int(dev->params.int_pin, GPIO_IN, GPIO_RISING, _irq_handler, dev);
-	//gpio_init_int(GPIO_PIN(PORT_A, 0), GPIO_IN, GPIO_RISING, _irq_handler, dev);
 
     /* test if the SPI is set up correctly and the device is responding */
     if (at86rf215_reg_read(dev, AT86RF215_REG__PART_NUM) != AT86RF2XX_PARTNUM) {
-        DEBUG("[at86rf2xx] error: unable to read correct part number\n");
+        DEBUG("[rf215] error: unable to read correct part number\n");
         return -1;
     }
 
@@ -117,18 +115,19 @@ static int _init(netdev_t *netdev)
 static int _send(netdev_t *netdev, const iolist_t *iolist)
 {
     at86rf2xx_t *dev = (at86rf2xx_t *)netdev;
+	/* len = offset */
     size_t len = 0;
 
 	//DEBUG("[rf215] send \n");
 
 	//DEBUG("[rf215] send : tx prepare\n");
-    at86rf2xx_tx_prepare(dev);
+    at86rf215_tx_prepare(dev);
 
     /* load packet data into FIFO */
     for (const iolist_t *iol = iolist; iol; iol = iol->iol_next) {
         /* current packet data + FCS too long */
         if ((len + iol->iol_len + 2) > AT86RF215_MAX_PKT_LENGTH) {
-            DEBUG("[at86rf2xx] error: packet too large (%u byte) to be send\n",
+            DEBUG("[rf215] error: packet too large (%u byte) to be send\n",
                   (unsigned)len + 2);
             return -EOVERFLOW;
         }
@@ -142,7 +141,7 @@ static int _send(netdev_t *netdev, const iolist_t *iolist)
     /* send data out directly if pre-loading id disabled */
     if (!(dev->netdev.flags & AT86RF2XX_OPT_PRELOADING)) {
 		//DEBUG("[rf215] send : tx exec\n");
-        at86rf2xx_tx_exec(dev);
+        at86rf215_tx_exec(dev);
     }
 
 	DEBUG("[rf215] send : complete.\n");
@@ -164,29 +163,18 @@ static int _recv(netdev_t *netdev, void *buf, size_t len, void *info)
 	/*** get size ***/
 	tmpH = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_RXFLH);
 	tmpL = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_RXFLL);
+	/* substract length of FCS field */
 	pkt_len = (((tmpH & 0x07)<<8) | tmpL) - 2;
 
 	//DEBUG("[rf215] recv : pkt_len %u.\n", pkt_len);
 
-    /* frame buffer protection will be unlocked as soon as at86rf215_rxfb_stop()
-     * is called*/
-    //at86rf215_rxfb_start(dev);
-
-    /* get the size of the received packet */
-    //at86rf215_rxfb_read(dev, &phr, 1);
-
-    /* ignore MSB (refer p.80) and substract length of FCS field */
-    //pkt_len = (phr & 0x7f) - 2;
-
     /* just return length when buf == NULL */
     if (buf == NULL) {
-        //at86rf215_rxfb_stop(dev);
 		//DEBUG("[rf215] recv : complete (length).\n");
         return pkt_len;
     }
     /* not enough space in buf */
     if (pkt_len > len) {
-        //at86rf215_rxfb_stop(dev);
         return -ENOBUFS;
     }
 #ifdef MODULE_NETSTATS_L2
@@ -207,13 +195,9 @@ static int _recv(netdev_t *netdev, void *buf, size_t len, void *info)
         uint8_t rssi = 0;
         netdev_ieee802154_rx_info_t *radio_info = info;
         at86rf215_rxfb_read(dev, &(radio_info->lqi), 1);
-#ifndef MODULE_AT86RF231
-        at86rf215_rxfb_read(dev, &(rssi), 1);
         at86rf215_rxfb_stop(dev);
-#else
-        at86rf215_rxfb_stop(dev);
+		// TODO
         rssi = at86rf215_reg_read(dev, AT86RF2XX_REG__PHY_ED_LEVEL);
-#endif
         radio_info->rssi = RSSI_BASE_VAL + rssi;
     }
     else {
@@ -234,7 +218,6 @@ static int _set_state(at86rf2xx_t *dev, netopt_state_t state)
             at86rf215_set_state(dev, AT86RF215_STATE_RF_SLEEP);
             break;
         case NETOPT_STATE_IDLE:
-            //at86rf215_set_state(dev, AT86RF2XX_STATE_RX_AACK_ON);
 			at86rf215_set_state(dev, AT86RF215_STATE_RF_RX);
             break;
         case NETOPT_STATE_TX:
@@ -250,13 +233,13 @@ static int _set_state(at86rf2xx_t *dev, netopt_state_t state)
                  * send() to write some frame data.
                  */
                 if (dev->pending_tx == 0) {
-                    /* retransmission of old data, at86rf2xx_tx_prepare normally
+                    /* retransmission of old data, at86rf215_tx_prepare normally
                      * increments this and the ISR for TX_END decrements it, to
                      * know when to switch back to the idle state. */
                     ++dev->pending_tx;
                 }
                 at86rf215_set_state(dev, AT86RF2XX_STATE_TX_ARET_ON);
-                at86rf2xx_tx_exec(dev);
+                at86rf215_tx_exec(dev);
             }
             break;
         case NETOPT_STATE_RESET:
@@ -383,6 +366,8 @@ static int _get(netdev_t *netdev, netopt_t opt, void *val, size_t max_len)
         at86rf215_assert_awake(dev);
     }
 
+	uint8_t tmp;
+
     /* these options require the transceiver to be not sleeping*/
     switch (opt) {
         case NETOPT_TX_POWER:
@@ -423,7 +408,7 @@ static int _get(netdev_t *netdev, netopt_t opt, void *val, size_t max_len)
 
         case NETOPT_AUTOACK:
             assert(max_len >= sizeof(netopt_enable_t));
-            uint8_t tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_AMCS);
+            tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_AMCS);
             *((netopt_enable_t *)val) = (tmp & AT86RF215_AACK_ENABLE) ? true : false;
             res = sizeof(netopt_enable_t);
             break;
@@ -493,15 +478,6 @@ static int _set(netdev_t *netdev, netopt_t opt, const void *val, size_t len)
         case NETOPT_CHANNEL_PAGE:
             assert(len == sizeof(uint16_t));
             uint8_t page = (((const uint16_t *)val)[0]) & UINT8_MAX;
-#ifdef MODULE_AT86RF212B
-            if ((page != 0) && (page != 2)) {
-                res = -EINVAL;
-            }
-            else {
-                at86rf215_set_page(dev, page);
-                res = sizeof(uint16_t);
-            }
-#else
             /* rf23x only supports page 0, no need to configure anything in the driver. */
             if (page != 0) {
                 res = -EINVAL;
@@ -509,7 +485,6 @@ static int _set(netdev_t *netdev, netopt_t opt, const void *val, size_t len)
             else {
                 res = sizeof(uint16_t);
             }
-#endif
             break;
 
         case NETOPT_TX_POWER:
@@ -607,8 +582,7 @@ static int _set(netdev_t *netdev, netopt_t opt, const void *val, size_t len)
     }
 
     /* go back to sleep if were sleeping and state hasn't been changed */
-    if ((old_state == AT86RF215_STATE_RF_SLEEP)
-        && (opt != NETOPT_STATE)) {
+    if ((old_state == AT86RF215_STATE_RF_SLEEP) && (opt != NETOPT_STATE)) {
         at86rf215_set_state(dev, AT86RF215_STATE_RF_SLEEP);
     }
 
