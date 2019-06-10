@@ -6,6 +6,7 @@
 
 /*** Base ***/
 #include <string.h>
+#include "xtimer.h"
 
 /*** driver ***/
 #include "at86rf215.h"
@@ -46,7 +47,8 @@
 #define RESULT_REQUEST_RETRANSMISSIONS 2
 
 /*** PMU ***/
-#define PMU_MEASUREMENTS      200  // number of frequencies to measure
+#define PMU_START_FREQUENCY   2400  // start frequency for measurement
+#define PMU_MEASUREMENTS      200   // number of frequencies to measure
 
 /*** Status codes (for SENSORS_READY) ***/
 #define DISTANCE_INVALID      0  // no measurement running, idle, ready for measurement
@@ -266,12 +268,293 @@ static void active_reflector_subtract(uint16_t last_start,
 	}
 }
 
+/********* Timer *********/
+
+static void init_timer2(void)
+{
+}
+
+static void start_timer2(uint8_t max)
+{
+	(void)max;
+}
+
+static void wait_for_timer2(uint8_t id)
+{
+	(void)id;
+}
+
+static int8_t wait_for_dig2(void)
+{
+	return 0;
+}
+
 /********* PMU *********/
+
+static void backup_registers(void)
+{
+}
+
+static void restore_registers(void)
+{
+}
+
+/*** set the frequency in MHz
+ * if offset == 1, the frequency is 0.5 Mhz higher
+ * frequency must be between 2322 MHz and 2527 MHz
+ */
+static void setFrequency(uint16_t f, uint8_t offset)
+{
+	if (f < 2322) {
+		// frequency is not supported
+	} else if (f < 2434) {
+		// CC_BAND is 0x8
+//		hal_register_write(RG_CC_CTRL_1, 0x08);
+		f -= 2306;			// f is now between 0x10 and 0x7F
+	} else if (f < 2528) {
+		// CC_BAND is 0x9
+//		hal_register_write(RG_CC_CTRL_1, 0x09);
+		f -= 2434;			// f is now between 0x00 and 0x5D
+	} else {
+		// frequency is not supported
+	}
+	f = f << 1;				// f is now between 0x00 and 0xFE
+	if (offset) {
+		f += 1;				// f is chosen 0.5 MHz higher (0x01 to 0xFF)
+	}
+
+//	hal_register_write(RG_CC_CTRL_0, (uint8_t)f);
+}
+
+static void sender_pmu(void)
+{
+//	hal_register_write(RG_TRX_STATE, CMD_FORCE_PLL_ON);
+//	hal_register_write(RG_TRX_STATE, CMD_TX_START);
+	xtimer_usleep(85);	// wait for receiver to measure
+}
+
+static void receiver_pmu(uint8_t* pmu_value)
+{
+//	hal_register_write(RG_TRX_STATE, CMD_FORCE_PLL_ON);
+//	hal_register_write(RG_TRX_STATE, CMD_RX_ON);
+	xtimer_usleep(45); // wait for sender to be ready
+
+	(void)pmu_value;
+//	*pmu_value = hal_register_read(RG_PHY_PMU_VALUE);
+}
+
+void pmu_magic_mode_classic(pmu_magic_role_t role)
+{
+	uint8_t i;
+	for (i=0; i < PMU_MEASUREMENTS; i++) {
+		// use 500 kHz spacing
+		uint8_t f, f_full, f_half;
+		switch (role) {
+			case PMU_MAGIC_ROLE_INITIATOR:		// initiator
+				f = i;
+				f_full = f >> 1;
+				f_half = f & 0x01;
+				setFrequency(PMU_START_FREQUENCY + f_full, f_half);
+				receiver_pmu(&local_pmu_values[i]);
+				sender_pmu();
+				break;
+			default:	// reflector
+				f = i + 1; // reflector is 500 kHz higher
+				f_full = f >> 1;
+				f_half = f & 0x01;
+				setFrequency(PMU_START_FREQUENCY + f_full, f_half);
+				sender_pmu();
+				receiver_pmu(&local_pmu_values[i]);
+				break;
+		}
+		wait_for_timer2(5);
+	}
+}
+
 static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 {
-	(void)role;
-	(void)mode;
-	return 0;
+	int8_t ret_val;
+
+	switch (role) {
+		case PMU_MAGIC_ROLE_INITIATOR:
+			PRINTF("[inphase] entered PMU Initiator\n");
+			break;
+		case PMU_MAGIC_ROLE_REFLECTOR:
+			PRINTF("[inphase] entered PMU Reflector\n");
+			break;
+		default:	// unknown role
+			PRINTF("[inphase] WARNING unknown role selected. Continue as Reflector\n");
+			break;
+	}
+	PRINTF("[inphase] PMU mode 0x%x\n", (uint8_t) mode);
+
+	/* Boundary */
+	//AT86RF233_ENTER_CRITICAL_REGION();
+
+	//watchdog_stop();
+	backup_registers();
+
+	init_timer2();
+
+	//hal_subregister_write(SR_TX_PWR, 0xF);			// set TX output power to -17dBm to avoid reflections
+//	hal_subregister_write(SR_TX_PWR, 0x0);			// set TX output power to +4dBm, MAXIMUM POWER
+//	hal_register_read(RG_IRQ_STATUS);				// clear all pending interrupts
+//	hal_subregister_write(SR_ARET_TX_TS_EN, 0x1);	// signal frame transmission via DIG2
+//	hal_subregister_write(SR_IRQ_2_EXT_EN, 0x1);	// enable time stamping via DIG2
+
+	// this line is normally only done at the reflector:
+//	hal_subregister_write(SR_TOM_EN, 0x0);			// disable TOM mode (unclear why this is done here)
+
+	// switch to a frequency where we are not likely being disturbed during synchronization
+	setFrequency(PMU_START_FREQUENCY, 0);
+
+	// reflector sends the synchronization frame
+	if (role == PMU_MAGIC_ROLE_REFLECTOR) {
+		// send PMU start
+
+		// TODO: send the correct frame here, just to sleep well...
+
+		//frame_range_basic_t f;
+		//f.frame_type = PMU_START;
+
+		//AT86RF233_NETWORK.send(initiator_requested, 1, &f);
+
+		// send PMU start on bare metal, as the normal protocol stack is too slow for us to be able to see the DIG2 signal
+		//packetbuf_copyfrom(&f, 1);
+		//packetbuf_set_addr(PACKETBUF_ADDR_RECEIVER, &initiator_requested);
+		//packetbuf_set_addr(PACKETBUF_ADDR_SENDER, &linkaddr_node_addr);
+		//packetbuf_compact();
+
+		xtimer_usleep(2000); // wait for initiator, it needs more time before it listens to DIG2
+
+//		hal_subregister_write(SR_TRX_CMD, CMD_TX_ARET_ON);
+//		hal_set_slptr_high(); // send the packet at the latest time possible
+//		hal_set_slptr_low();
+	}
+
+	// wait for sync signal
+	if (wait_for_dig2()) {
+		// DIG2 signal not found, abort measurement
+		// to be honest: if the reflector does not get the DIG2 from its own sending
+		// there must be something horribly wrong...
+		ret_val = -1; // DIG2 signal not seen, abort!
+		goto BAIL;
+	}
+
+	if (role == PMU_MAGIC_ROLE_REFLECTOR) {
+		xtimer_usleep(9.5243);	// DIG2 signal is on average 9.5243 us delayed on the initiator, reflector waits
+	}
+
+	start_timer2(7);		// timer counts to 7, we have 244us between synchronization points
+
+	// now in sync with the other node
+
+	if (role == PMU_MAGIC_ROLE_INITIATOR) {
+		// check if the initiator got the TIME_SYNC_REQUEST back
+		// reflector cannot check if sync was correct, it will do the measurement anyway
+		// initiator can choose the next reflector and save time
+		// reflector will not disturb the next measurement of the reflector
+//		uint8_t fb_data[5];
+//		hal_sram_read(12, 5, fb_data);
+//
+//		uint8_t valid = 1;
+//		if (fb_data[0] != settings.reflector.u8[0]) {
+//			valid = 0;
+//		}
+//		if (fb_data[1] != settings.reflector.u8[1]) {
+//			valid = 0;
+//		}
+//		if (fb_data[2] != linkaddr_node_addr.u8[0]) {
+//			valid = 0;
+//		}
+//		if (fb_data[3] != linkaddr_node_addr.u8[1]) {
+//			valid = 0;
+//		}
+//		if (fb_data[4] != TIME_SYNC_REQUEST) {
+//			valid = 0;
+//		}
+//		if (valid == 0) {
+//			ret_val = -2; // synchonization was done with wrong frame
+//			goto BAIL;
+//		}
+	}
+
+	switch (role) {
+		case PMU_MAGIC_ROLE_INITIATOR:		// initiator
+//			hal_subregister_write(SR_TX_RX, 0);				// RX PLL frequency is selected
+			break;
+		default:	// reflector
+//			hal_subregister_write(SR_PMU_IF_INVERSE, 1);	// Inverse IF position
+//			hal_subregister_write(SR_TX_RX, 1);				// TX PLL frequency is selected
+			break;
+	}
+
+//	hal_subregister_write(SR_RX_PDT_DIS, 1);	// RX Path is disabled
+//	hal_subregister_write(SR_PMU_EN, 1);		// enable PMU
+//	hal_subregister_write(SR_MOD_SEL, 1);		// manual control of modulation data
+//	hal_subregister_write(SR_MOD, 0);			// continuous 0 chips for modulation
+//	hal_subregister_write(SR_TX_RX_SEL, 1);		// manual control of PLL frequency mode
+
+	wait_for_timer2(1);
+
+	/*** write 0 to buffer ***/
+	//uint8_t fb_data[127] = {0};
+	//hal_frame_write(fb_data, 127);
+	/* antenna diversity control is skipped, we only have one antenna */
+	//wait_for_timer2(2);
+
+	/* measure RSSI */
+//	uint8_t rssi;
+//	hal_register_write(RG_TRX_STATE, CMD_FORCE_PLL_ON);
+//	switch (role) {
+//		case PMU_MAGIC_ROLE_INITIATOR:		// initiator
+//			hal_register_write(RG_TRX_STATE, CMD_RX_ON);
+//			_delay_us(50); // wait some time for sender to be ready...
+//			rssi = hal_subregister_read(SR_RSSI);
+//			break;
+//		default:	// reflector
+//			hal_register_write(RG_TRX_STATE, CMD_TX_START);
+//			break;
+//	}
+
+	wait_for_timer2(3);
+
+//	hal_register_write(RG_TRX_STATE, CMD_FORCE_PLL_ON);
+//	switch (role) {
+//		case PMU_MAGIC_ROLE_INITIATOR:		// initiator
+//			hal_register_write(RG_TRX_STATE, CMD_TX_START);
+//			break;
+//		default:	// reflector
+//			hal_register_write(RG_TRX_STATE, CMD_RX_ON);
+//			_delay_us(50); // wait some time for sender to be ready...
+//			rssi = hal_subregister_read(SR_RSSI);
+//			break;
+//	}
+
+	/* TODO: set gain according to rssi */
+//	hal_register_write(RG_TST_AGC, 0x09);
+
+	wait_for_timer2(4);
+
+	switch(mode) {
+		case PMU_MAGIC_MODE_CLASSIC:
+			pmu_magic_mode_classic(role);
+			break;
+		default:
+			pmu_magic_mode_classic(role);
+			break;
+	}
+	ret_val = 0;
+
+BAIL:
+
+	restore_registers();
+	//watchdog_start();
+
+	/* Boundary */
+	//AT86RF233_LEAVE_CRITICAL_REGION();
+
+	return ret_val;
 }
 
 /********* Process *********/
