@@ -230,12 +230,12 @@ void at86rf215_tx_exec(const at86rf2xx_t *dev)
 //	do {
 //		tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_IRQS);
 //	} while ( !(tmp|AT86RF215_BBCn_IRQS__TXFE_M) );
-//	do {
-//		tmp = at86rf215_reg_read(dev, AT86RF215_REG__RF09_STATE)
-//				& AT86RF215_RFn_STATE_MASK;
-//	} while ( tmp != AT86RF215_STATE_RF_TXPREP );
+	do {
+		tmp = at86rf215_reg_read(dev, AT86RF215_REG__RF09_STATE)
+				& AT86RF215_RFn_STATE_MASK;
+	} while ( tmp != AT86RF215_STATE_RF_TXPREP );
 	/* change to RX */
-	//at86rf215_reg_write(dev, AT86RF215_REG__RF09_CMD, AT86RF215_STATE_RF_RX);
+	at86rf215_reg_write(dev, AT86RF215_REG__RF09_CMD, AT86RF215_STATE_RF_RX);
 
 	/*** enable baseband ***/
 //	tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_PC);
