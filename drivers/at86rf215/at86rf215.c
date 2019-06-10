@@ -149,6 +149,32 @@ size_t at86rf2xx_send(at86rf2xx_t *dev, const uint8_t *data, size_t len)
     return len;
 }
 
+int at86rf215_receive(at86rf2xx_t *dev, void *buf, size_t len)
+{
+	size_t pkt_len;
+	uint8_t tmpH;
+	uint8_t tmpL;
+
+	/*** get size ***/
+	tmpH = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_RXFLH);
+	tmpL = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_RXFLL);
+	/* substract length of FCS field */
+	pkt_len = (((tmpH & 0x07)<<8) | tmpL) - 2;
+	/* not enough space in buf */
+	if (pkt_len > len) {
+		return -ENOBUFS;
+	}
+
+	/*** execute ***/
+	at86rf215_rxfb_start(dev);
+	/* copy payload */
+	at86rf215_rxfb_read(dev, (uint8_t *)buf, pkt_len);
+	/* Ignore FCS */
+	at86rf215_rxfb_stop(dev);
+
+	return pkt_len;
+}
+
 void at86rf215_tx_prepare(at86rf2xx_t *dev)
 {
 //    uint8_t state;
