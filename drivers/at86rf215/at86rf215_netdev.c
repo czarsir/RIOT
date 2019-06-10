@@ -32,6 +32,9 @@ static void _isr(netdev_t *netdev);
 static int _get(netdev_t *netdev, netopt_t opt, void *val, size_t max_len);
 static int _set(netdev_t *netdev, netopt_t opt, const void *val, size_t len);
 
+extern void inphase_start(at86rf2xx_t *dev);
+extern void inphase_isr(at86rf2xx_t *dev);
+
 const netdev_driver_t at86rf2xx_driver = {
     .send = _send,
     .recv = _recv,
@@ -396,7 +399,8 @@ static int _get(netdev_t *netdev, netopt_t opt, void *val, size_t max_len)
 
         case NETOPT_IS_CHANNEL_CLR:
             assert(max_len >= sizeof(netopt_enable_t));
-            *((netopt_enable_t *)val) = at86rf2xx_cca(dev);
+            //*((netopt_enable_t *)val) = at86rf2xx_cca(dev);
+			inphase_start(dev);
             res = sizeof(netopt_enable_t);
             break;
 
@@ -626,6 +630,7 @@ static void _isr(netdev_t *netdev)
             if (!(dev->netdev.flags & AT86RF2XX_OPT_TELL_RX_END)) {
                 return;
             }
+			inphase_isr(dev);
             netdev->event_callback(netdev, NETDEV_EVENT_RX_COMPLETE);
 //		}
 //        else if ((state == AT86RF2XX_STATE_TX_ARET_ON)
