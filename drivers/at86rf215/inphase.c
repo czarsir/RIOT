@@ -493,7 +493,7 @@ static void inphase_receive(const uint16_t *src, uint16_t msg_len, void *msg)
 	frame_range_basic_t *frame_basic = msg;
 	uint8_t msg_accepted = 0;
 
-	PRINTF("[inphase] inphase_receive: message received!\n");
+	PRINTF("[inphase] inphase_receive: message received! 0x%x\n", frame_basic->frame_type);
 
 	switch (frame_basic->frame_type) {
 		case RANGE_REQUEST:
@@ -541,6 +541,9 @@ static void inphase_receive(const uint16_t *src, uint16_t msg_len, void *msg)
 			break;
 	}
 
+	/* test */
+	settings.allow_ranging = 1;
+
 	/*** process ***/
 	if (msg_accepted) {
 		statemachine(frame_basic->frame_type, &frame_basic->content);
@@ -550,6 +553,8 @@ static void inphase_receive(const uint16_t *src, uint16_t msg_len, void *msg)
 void inphase_isr(at86rf2xx_t *dev)
 {
 	DEBUG("[inphase] inphase_isr\n");
+
+	pDev = dev;
 
 	uint16_t len = at86rf215_receive(dev, fbRx, FRAME_BUFFER_LENGTH);
 	uint16_t src = 0;
