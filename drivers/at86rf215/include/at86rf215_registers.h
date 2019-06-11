@@ -95,6 +95,11 @@ extern "C" {
 #define AT86RF215_REG__BBC0_FSKPLL                              (0x0365)
 #define AT86RF215_REG__BBC0_FSKPHRTX                            (0x036A)
 #define AT86RF215_REG__BBC0_FSKDM                               (0x0372)
+
+/*** PMU ***/
+#define AT86RF215_REG__BBC0_PMUC                                (0x0380)
+#define AT86RF215_REG__BBC0_PMUVAL                              (0x0381)
+
 /* RX Frame Buffer */
 #define AT86RF215_REG__BBC0_FBRXS                               (0x2000)
 /* TX Frame Buffer */
@@ -172,6 +177,7 @@ extern "C" {
 #define AT86RF215_BBCn_IRQS__TXFE_M                             (0x10)
 #define AT86RF215_BBCn_IRQS__RXFE_M                             (0x02)
 #define AT86RF215_BBCn_IRQS__RXFS_M                             (0x01)
+#define AT86RF215_BBCn_IRQM__TXFE_M                             (0x10)
 #define AT86RF215_BBCn_IRQM__RXFE_M                             (0x02)
 #define AT86RF215_BBCn_IRQM__RXFS_M                             (0x01)
 /* FSK */

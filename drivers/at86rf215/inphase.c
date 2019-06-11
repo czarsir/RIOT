@@ -11,8 +11,8 @@
 /*** driver ***/
 #include "at86rf215.h"
 //#include "at86rf215_netdev.h"
-//#include "at86rf215_internal.h"
-//#include "at86rf215_registers.h"
+#include "at86rf215_internal.h"
+#include "at86rf215_registers.h"
 
 #define ENABLE_DEBUG (1)
 #include "debug.h"
@@ -47,8 +47,10 @@
 #define RESULT_REQUEST_RETRANSMISSIONS 2
 
 /*** PMU ***/
-#define PMU_START_FREQUENCY   2400  // start frequency for measurement
-#define PMU_MEASUREMENTS      200   // number of frequencies to measure
+//#define PMU_START_FREQUENCY   2400  // start frequency for measurement
+#define PMU_START_FREQUENCY   0
+//#define PMU_MEASUREMENTS      200   // number of frequencies to measure
+#define PMU_MEASUREMENTS      5
 
 /*** Status codes (for SENSORS_READY) ***/
 #define DISTANCE_INVALID      0  // no measurement running, idle, ready for measurement
@@ -156,6 +158,9 @@ uint8_t next_status_code;
 uint8_t retransmissions;
 uint8_t next_result_start;
 
+/*** Sync ***/
+volatile uint8_t sigSync;
+
 /*** Buffer ***/
 static uint8_t fbRx[FRAME_BUFFER_LENGTH];
 /* allocate an array for the measurement results */
@@ -180,7 +185,7 @@ static uint8_t inphase_connection_send(uint16_t dest, uint8_t msg_len, void *msg
 {
 	(void)dest;
 	DEBUG("[inphase] send\n");
-	at86rf2xx_send(pDev, msg, msg_len);
+	at86rf215_send(pDev, msg, msg_len);
 	return 0;
 }
 
@@ -257,7 +262,7 @@ static void active_reflector_subtract(uint16_t last_start,
 	for (i = 0; i < result_length; i++) {
 		// do basic calculations to save memory
 		int16_t v = local_pmu_values[i+last_start]-result_data[i];
-		
+
 		if (v > 127) {
 			v -= 256;
 		} else if (v < -128) {
@@ -286,17 +291,59 @@ static void wait_for_timer2(uint8_t id)
 
 static int8_t wait_for_dig2(void)
 {
+	DEBUG("[inphase] sync: wait\n");
+	while(sigSync) {}
+	DEBUG("[inphase] sync: done\n");
+
 	return 0;
 }
 
 /********* PMU *********/
 
+/*** State ***/
+static uint8_t preState;
+/*** Frequency ***/
+static uint8_t rfCS;
+static uint8_t rfCCF0L;
+static uint8_t rfCCF0H;
+static uint8_t rfCNL;
+/*** Interrupt ***/
+static uint8_t bbcIRQ;
+
 static void backup_registers(void)
 {
+	/*** State ***/
+	preState = at86rf215_set_state(pDev, AT86RF215_STATE_RF_TRXOFF);
+
+	/*** Frequency ***/
+	rfCS = at86rf215_reg_read(pDev, AT86RF215_REG__RF09_CS);
+	rfCCF0L = at86rf215_reg_read(pDev, AT86RF215_REG__RF09_CCF0L);
+	rfCCF0H = at86rf215_reg_read(pDev, AT86RF215_REG__RF09_CCF0H);
+	rfCNL = at86rf215_reg_read(pDev, AT86RF215_REG__RF09_CNL);
+
+	/*** Interrupt ***/
+	bbcIRQ = at86rf215_reg_read(pDev, AT86RF215_REG__BBC0_IRQM);
 }
 
 static void restore_registers(void)
 {
+//	at86rf215_set_state(pDev, AT86RF215_STATE_RF_TRXOFF);
+//
+//	/*** Frequency ***/
+//	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CS, rfCS);
+//	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CCF0L, rfCCF0L);
+//	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CCF0H, rfCCF0H);
+//	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CNL, rfCNL);
+//	/* channel scheme */
+//	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CNM, 0);
+//
+//	/*** Interrupt ***/
+//	at86rf215_reg_read(pDev, AT86RF215_REG__BBC0_IRQS);
+//	at86rf215_reg_write(pDev, AT86RF215_REG__BBC0_IRQM, bbcIRQ);
+//
+//	/*** restore State ***/
+//	//at86rf215_set_state(pDev, preState);
+	at86rf215_set_state(pDev, AT86RF215_STATE_RF_RX);
 }
 
 /*** set the frequency in MHz
@@ -305,42 +352,50 @@ static void restore_registers(void)
  */
 static void setFrequency(uint16_t f, uint8_t offset)
 {
-	if (f < 2322) {
-		// frequency is not supported
-	} else if (f < 2434) {
-		// CC_BAND is 0x8
+//	if (f < 2322) {
+//		// frequency is not supported
+//	} else if (f < 2434) {
+//		// CC_BAND is 0x8
 //		hal_register_write(RG_CC_CTRL_1, 0x08);
-		f -= 2306;			// f is now between 0x10 and 0x7F
-	} else if (f < 2528) {
-		// CC_BAND is 0x9
+//		f -= 2306;			// f is now between 0x10 and 0x7F
+//	} else if (f < 2528) {
+//		// CC_BAND is 0x9
 //		hal_register_write(RG_CC_CTRL_1, 0x09);
-		f -= 2434;			// f is now between 0x00 and 0x5D
-	} else {
-		// frequency is not supported
-	}
-	f = f << 1;				// f is now between 0x00 and 0xFE
-	if (offset) {
-		f += 1;				// f is chosen 0.5 MHz higher (0x01 to 0xFF)
-	}
+//		f -= 2434;			// f is now between 0x00 and 0x5D
+//	} else {
+//		// frequency is not supported
+//	}
+//	f = f << 1;				// f is now between 0x00 and 0xFE
+//	if (offset) {
+//		f += 1;				// f is chosen 0.5 MHz higher (0x01 to 0xFF)
+//	}
 
-//	hal_register_write(RG_CC_CTRL_0, (uint8_t)f);
+	(void)offset;
+	at86rf215_set_state(pDev, AT86RF215_STATE_RF_TRXOFF);
+
+	/*** Channel ***/
+//	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CS, rfCS);
+//	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CCF0L, rfCCF0L);
+//	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CCF0H, rfCCF0H);
+	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CNL, f);
+	/* channel scheme */
+	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CNM, 0);
 }
 
 static void sender_pmu(void)
 {
-//	hal_register_write(RG_TRX_STATE, CMD_FORCE_PLL_ON);
-//	hal_register_write(RG_TRX_STATE, CMD_TX_START);
+	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CMD, AT86RF215_STATE_RF_TXPREP);
+	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CMD, AT86RF215_STATE_RF_TX);
 	xtimer_usleep(85);	// wait for receiver to measure
 }
 
 static void receiver_pmu(uint8_t* pmu_value)
 {
-//	hal_register_write(RG_TRX_STATE, CMD_FORCE_PLL_ON);
-//	hal_register_write(RG_TRX_STATE, CMD_RX_ON);
+	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CMD, AT86RF215_STATE_RF_TXPREP);
+	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CMD, AT86RF215_STATE_RF_RX);
 	xtimer_usleep(45); // wait for sender to be ready
 
-	(void)pmu_value;
-//	*pmu_value = hal_register_read(RG_PHY_PMU_VALUE);
+	*pmu_value = at86rf215_reg_read(pDev, AT86RF215_REG__BBC0_PMUVAL);
 }
 
 void pmu_magic_mode_classic(pmu_magic_role_t role)
@@ -348,21 +403,23 @@ void pmu_magic_mode_classic(pmu_magic_role_t role)
 	uint8_t i;
 	for (i=0; i < PMU_MEASUREMENTS; i++) {
 		// use 500 kHz spacing
-		uint8_t f, f_full, f_half;
+//		uint8_t f, f_full, f_half;
 		switch (role) {
 			case PMU_MAGIC_ROLE_INITIATOR:		// initiator
-				f = i;
-				f_full = f >> 1;
-				f_half = f & 0x01;
-				setFrequency(PMU_START_FREQUENCY + f_full, f_half);
+//				f = i;
+//				f_full = f >> 1;
+//				f_half = f & 0x01;
+				//setFrequency(PMU_START_FREQUENCY + f_full, f_half);
+				setFrequency(PMU_START_FREQUENCY + i, 0);
 				receiver_pmu(&local_pmu_values[i]);
 				sender_pmu();
 				break;
 			default:	// reflector
-				f = i + 1; // reflector is 500 kHz higher
-				f_full = f >> 1;
-				f_half = f & 0x01;
-				setFrequency(PMU_START_FREQUENCY + f_full, f_half);
+//				f = i + 1; // reflector is 500 kHz higher
+//				f_full = f >> 1;
+//				f_half = f & 0x01;
+				//setFrequency(PMU_START_FREQUENCY + f_full, f_half);
+				setFrequency(PMU_START_FREQUENCY + i, 0);
 				sender_pmu();
 				receiver_pmu(&local_pmu_values[i]);
 				break;
@@ -394,6 +451,8 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 	//watchdog_stop();
 	backup_registers();
 
+	/****** Init ******/
+
 	init_timer2();
 
 	//hal_subregister_write(SR_TX_PWR, 0xF);			// set TX output power to -17dBm to avoid reflections
@@ -405,17 +464,39 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 	// this line is normally only done at the reflector:
 //	hal_subregister_write(SR_TOM_EN, 0x0);			// disable TOM mode (unclear why this is done here)
 
+	// TODO ding
+	/*** Sync config ***/
+	switch (role) {
+		case PMU_MAGIC_ROLE_INITIATOR:
+			at86rf215_reg_write(pDev, AT86RF215_REG__BBC0_IRQM, AT86RF215_BBCn_IRQM__RXFE_M);
+			break;
+		case PMU_MAGIC_ROLE_REFLECTOR:
+			at86rf215_reg_write(pDev, AT86RF215_REG__BBC0_IRQM, AT86RF215_BBCn_IRQM__TXFE_M);
+			break;
+		default:
+			break;
+	}
+	at86rf215_reg_read(pDev, AT86RF215_REG__BBC0_IRQS);
+	sigSync = 1;
+
+	/*** Frequency ***/
 	// switch to a frequency where we are not likely being disturbed during synchronization
 	setFrequency(PMU_START_FREQUENCY, 0);
 
-	// reflector sends the synchronization frame
+	/****** Sync ******/
+
+	/* Initiator */
+	at86rf215_set_state(pDev, AT86RF215_STATE_RF_RX);
+
+	/* reflector sends the synchronization frame */
 	if (role == PMU_MAGIC_ROLE_REFLECTOR) {
 		// send PMU start
 
 		// TODO: send the correct frame here, just to sleep well...
 
-		//frame_range_basic_t f;
-		//f.frame_type = PMU_START;
+		frame_range_basic_t f;
+		f.frame_type = PMU_START;
+		conn.send(settings.initiator, 1, &f);
 
 		//AT86RF233_NETWORK.send(initiator_requested, 1, &f);
 
@@ -425,14 +506,14 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 		//packetbuf_set_addr(PACKETBUF_ADDR_SENDER, &linkaddr_node_addr);
 		//packetbuf_compact();
 
-		xtimer_usleep(2000); // wait for initiator, it needs more time before it listens to DIG2
+		//xtimer_usleep(2000); // wait for initiator, it needs more time before it listens to DIG2
 
 //		hal_subregister_write(SR_TRX_CMD, CMD_TX_ARET_ON);
 //		hal_set_slptr_high(); // send the packet at the latest time possible
 //		hal_set_slptr_low();
 	}
 
-	// wait for sync signal
+	/* wait for sync signal */
 	if (wait_for_dig2()) {
 		// DIG2 signal not found, abort measurement
 		// to be honest: if the reflector does not get the DIG2 from its own sending
@@ -440,10 +521,14 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 		ret_val = -1; // DIG2 signal not seen, abort!
 		goto BAIL;
 	}
+	at86rf215_reg_write(pDev, AT86RF215_REG__BBC0_IRQM, 0);
+	at86rf215_reg_read(pDev, AT86RF215_REG__BBC0_IRQS);
 
 	if (role == PMU_MAGIC_ROLE_REFLECTOR) {
 		xtimer_usleep(9.5243);	// DIG2 signal is on average 9.5243 us delayed on the initiator, reflector waits
 	}
+
+	/****** Sync (done) ******/
 
 	start_timer2(7);		// timer counts to 7, we have 244us between synchronization points
 
@@ -495,15 +580,20 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 //	hal_subregister_write(SR_MOD, 0);			// continuous 0 chips for modulation
 //	hal_subregister_write(SR_TX_RX_SEL, 1);		// manual control of PLL frequency mode
 
+	// TODO ding
+	/*** PMU ***/
+	at86rf215_reg_write(pDev, AT86RF215_REG__BBC0_PMUC, 0x1f);  // PUM enable
+
 	wait_for_timer2(1);
 
 	/*** write 0 to buffer ***/
 	//uint8_t fb_data[127] = {0};
 	//hal_frame_write(fb_data, 127);
 	/* antenna diversity control is skipped, we only have one antenna */
+
 	//wait_for_timer2(2);
 
-	/* measure RSSI */
+	/* measure RSSI (initiator) */
 //	uint8_t rssi;
 //	hal_register_write(RG_TRX_STATE, CMD_FORCE_PLL_ON);
 //	switch (role) {
@@ -519,6 +609,7 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 
 	wait_for_timer2(3);
 
+	/* measure RSSI (reflector) */
 //	hal_register_write(RG_TRX_STATE, CMD_FORCE_PLL_ON);
 //	switch (role) {
 //		case PMU_MAGIC_ROLE_INITIATOR:		// initiator
@@ -548,6 +639,7 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 
 BAIL:
 
+	at86rf215_reset(pDev);
 	restore_registers();
 	//watchdog_start();
 
@@ -630,6 +722,7 @@ static void statemachine(uint8_t frame_type, frame_subframe_t *frame)
 					next_status_code = DISTANCE_WRONG_SYNC;
 					reset_statemachine(); // synced to wrong frame, abort!
 				} else {
+					xtimer_sleep(1);
 					next_result_start = 0;
 					send_result_request(next_result_start);
 					retransmissions = RESULT_REQUEST_RETRANSMISSIONS; // maximum allowed retransmissions
@@ -675,6 +768,7 @@ static void statemachine(uint8_t frame_type, frame_subframe_t *frame)
 				} else {
 					// got all results, finished
 					fsm_state = IDLE;
+					DEBUG("[inphase] done.\n");
 				}
 			} else {
 				/* all other frames are invalid here */
@@ -722,6 +816,7 @@ static void statemachine(uint8_t frame_type, frame_subframe_t *frame)
 						// start address points outside of the pmu data, this indicates that the initiator does not need more data
 						fsm_state = IDLE;
 						status_code = DISTANCE_IDLE;
+						DEBUG("[inphase] done.\n");
 					} else {
 						// initiator still needs results
 						uint8_t result_length;
@@ -830,6 +925,8 @@ static void inphase_receive(const uint16_t *src, uint16_t msg_len, void *msg)
 	/*** process ***/
 	if (msg_accepted) {
 		statemachine(frame_basic->frame_type, &frame_basic->content);
+	} else {
+		PRINTF("[inphase] inphase_receive: discard.\n");
 	}
 }
 

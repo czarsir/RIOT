@@ -223,7 +223,7 @@ void at86rf2xx_set_option(at86rf2xx_t *dev, uint16_t option, bool state);
  * This function ignores the PRELOADING option
  * data to send (must include IEEE802.15.4 header)
  */
-size_t at86rf2xx_send(at86rf2xx_t *dev, const uint8_t *data, size_t len);
+size_t at86rf215_send(at86rf2xx_t *dev, const uint8_t *data, size_t len);
 int at86rf215_receive(at86rf2xx_t *dev, void *buf, size_t len);
 
 // TODO

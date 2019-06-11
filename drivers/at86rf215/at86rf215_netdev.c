@@ -32,6 +32,8 @@ static void _isr(netdev_t *netdev);
 static int _get(netdev_t *netdev, netopt_t opt, void *val, size_t max_len);
 static int _set(netdev_t *netdev, netopt_t opt, const void *val, size_t len);
 
+/*** InPhase ***/
+extern volatile uint8_t sigSync;
 extern void inphase_start(at86rf2xx_t *dev);
 extern void inphase_isr(at86rf2xx_t *dev);
 
@@ -47,7 +49,7 @@ const netdev_driver_t at86rf2xx_driver = {
 static void _irq_handler(void *arg)
 {
 	netdev_t *dev = (netdev_t *) arg;
-	at86rf2xx_t *dd = (at86rf2xx_t *) arg;
+	//at86rf2xx_t *dd = (at86rf2xx_t *) arg;
 
 	/* use puts() instead of DEBUG(). stack too small */
 	puts("[rf215] irq_handler\n");
@@ -64,8 +66,13 @@ static void _irq_handler(void *arg)
 //		puts("[rf215] irq_handler : Rx end.\n");
 //	}
 
+	if(sigSync == 1) {
+		sigSync = 0;
+		return;
+	}
+
 	//at86rf215_set_state(dd, AT86RF215_STATE_RF_RX);
-	at86rf215_reg_write(dd, AT86RF215_REG__RF09_CMD, AT86RF215_STATE_RF_RX);
+	//at86rf215_reg_write(dd, AT86RF215_REG__RF09_CMD, AT86RF215_STATE_RF_RX);
 
 	if (dev->event_callback) {
 		dev->event_callback(dev, NETDEV_EVENT_ISR);
@@ -627,11 +634,12 @@ static void _isr(netdev_t *netdev)
 //		if ((state == AT86RF2XX_STATE_RX_AACK_ON)
 //            || (state == AT86RF2XX_STATE_BUSY_RX_AACK)) {
             DEBUG("[rf215] EVT - RX_COMPLETE\n");
-            if (!(dev->netdev.flags & AT86RF2XX_OPT_TELL_RX_END)) {
-                return;
-            }
+//            if (!(dev->netdev.flags & AT86RF2XX_OPT_TELL_RX_END)) {
+//                return;
+//            }
 			inphase_isr(dev);
             netdev->event_callback(netdev, NETDEV_EVENT_RX_COMPLETE);
+			at86rf215_set_state(dev, AT86RF215_STATE_RF_RX);
 //		}
 //        else if ((state == AT86RF2XX_STATE_TX_ARET_ON)
 //                 || (state == AT86RF2XX_STATE_BUSY_TX_ARET)) {

@@ -136,7 +136,7 @@ void at86rf215_reset(at86rf2xx_t *dev)
     DEBUG("[rf215] -- reset : complete.\n");
 }
 
-size_t at86rf2xx_send(at86rf2xx_t *dev, const uint8_t *data, size_t len)
+size_t at86rf215_send(at86rf2xx_t *dev, const uint8_t *data, size_t len)
 {
     /* check data length */
     if (len > AT86RF215_MAX_PKT_LENGTH) {
