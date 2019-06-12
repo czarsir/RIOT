@@ -150,6 +150,7 @@ static int _send(netdev_t *netdev, const iolist_t *iolist)
     if (!(dev->netdev.flags & AT86RF2XX_OPT_PRELOADING)) {
 		//DEBUG("[rf215] send : tx exec\n");
         at86rf215_tx_exec(dev);
+		at86rf215_tx_exec_tail(dev);
     }
 
 	DEBUG("[rf215] send : complete.\n");
@@ -248,6 +249,7 @@ static int _set_state(at86rf2xx_t *dev, netopt_state_t state)
                 }
                 at86rf215_set_state(dev, AT86RF2XX_STATE_TX_ARET_ON);
                 at86rf215_tx_exec(dev);
+				//at86rf215_tx_exec_tail(dev);
             }
             break;
         case NETOPT_STATE_RESET:

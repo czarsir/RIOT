@@ -224,6 +224,7 @@ void at86rf2xx_set_option(at86rf2xx_t *dev, uint16_t option, bool state);
  * data to send (must include IEEE802.15.4 header)
  */
 size_t at86rf215_send(at86rf2xx_t *dev, const uint8_t *data, size_t len);
+size_t at86rf215_send_no_tail(at86rf2xx_t *dev, const uint8_t *data, size_t len);
 int at86rf215_receive(at86rf2xx_t *dev, void *buf, size_t len);
 
 // TODO
@@ -233,6 +234,7 @@ void at86rf215_tx_prepare(at86rf2xx_t *dev);
 size_t at86rf215_tx_load(at86rf2xx_t *dev, size_t offset, const uint8_t *data, size_t len);
 /*** Trigger sending ***/
 void at86rf215_tx_exec(const at86rf2xx_t *dev);
+void at86rf215_tx_exec_tail(const at86rf2xx_t *dev);
 
 // TODO
 /*** Perform one manual CCA ***/

@@ -84,6 +84,7 @@ typedef struct {
 typedef struct {
 	uint8_t (*init)(void);
 	uint8_t (*send)(uint16_t dest, uint8_t msg_len, void *msg);
+	uint8_t (*send_lite)(uint16_t dest, uint8_t msg_len, void *msg);
 	uint8_t (*close)(void);
 } InphaseConnection;
 

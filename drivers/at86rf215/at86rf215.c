@@ -146,7 +146,21 @@ size_t at86rf215_send(at86rf2xx_t *dev, const uint8_t *data, size_t len)
     at86rf215_tx_prepare(dev);
     at86rf215_tx_load(dev, 0, data, len);
     at86rf215_tx_exec(dev);
+	at86rf215_tx_exec_tail(dev);
     return len;
+}
+
+size_t at86rf215_send_no_tail(at86rf2xx_t *dev, const uint8_t *data, size_t len)
+{
+	/* check data length */
+	if (len > AT86RF215_MAX_PKT_LENGTH) {
+		DEBUG("[rf215] Error: data to send exceeds max packet size\n");
+		return 0;
+	}
+	at86rf215_tx_prepare(dev);
+	at86rf215_tx_load(dev, 0, data, len);
+	at86rf215_tx_exec(dev);
+	return len;
 }
 
 int at86rf215_receive(at86rf2xx_t *dev, void *buf, size_t len)
@@ -225,6 +239,11 @@ void at86rf215_tx_exec(const at86rf2xx_t *dev)
         (dev->netdev.flags & AT86RF2XX_OPT_TELL_TX_START)) {
         netdev->event_callback(netdev, NETDEV_EVENT_TX_STARTED);
     }
+}
+
+void at86rf215_tx_exec_tail(const at86rf2xx_t *dev)
+{
+	uint8_t tmp;
 
 	/*** wait until end ***/
 //	do {

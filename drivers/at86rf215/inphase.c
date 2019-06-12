@@ -46,15 +46,23 @@ static int8_t* signed_local_pmu_values = (int8_t*)local_pmu_values;
 
 /********* Functions *********/
 
+/*** Connection ***/
 extern uint8_t inphase_connection_init(void);
 extern uint8_t inphase_connection_send(uint16_t dest, uint8_t msg_len, void *msg);
+extern uint8_t inphase_connection_send_lite(uint16_t dest, uint8_t msg_len, void *msg);
 extern uint8_t inphase_connection_close(void);
+/*** Timer ***/
+extern void init_timer(void);
+extern void start_timer(void);
+extern void wait_for_timer(uint8_t id);
+extern void stop_timer(void);
 
 /********* Special *********/
 
 static const InphaseConnection conn = {
 	inphase_connection_init,
 	inphase_connection_send,
+	inphase_connection_send_lite,
 	inphase_connection_close
 };
 
@@ -133,21 +141,7 @@ static void active_reflector_subtract(uint16_t last_start,
 	}
 }
 
-/********* Timer *********/
-
-static void init_timer2(void)
-{
-}
-
-static void start_timer2(uint8_t max)
-{
-	(void)max;
-}
-
-static void wait_for_timer2(uint8_t id)
-{
-	(void)id;
-}
+/********* Sync *********/
 
 static int8_t wait_for_dig2(void)
 {
@@ -284,7 +278,7 @@ static void pmu_magic_mode_classic(pmu_magic_role_t role)
 				receiver_pmu(&local_pmu_values[i]);
 				break;
 		}
-		wait_for_timer2(5);
+		wait_for_timer(5);
 	}
 }
 
@@ -313,7 +307,7 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 
 	/****** Init ******/
 
-	init_timer2();
+	init_timer();
 
 	//hal_subregister_write(SR_TX_PWR, 0xF);			// set TX output power to -17dBm to avoid reflections
 //	hal_subregister_write(SR_TX_PWR, 0x0);			// set TX output power to +4dBm, MAXIMUM POWER
@@ -356,7 +350,7 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 
 		frame_range_basic_t f;
 		f.frame_type = PMU_START;
-		conn.send(settings.initiator, 1, &f);
+		conn.send_lite(settings.initiator, 1, &f);
 
 		//AT86RF233_NETWORK.send(initiator_requested, 1, &f);
 
@@ -390,7 +384,7 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 
 	/****** Sync (done) ******/
 
-	start_timer2(7);		// timer counts to 7, we have 244us between synchronization points
+	start_timer();		// timer counts to 7, we have 244us between synchronization points
 
 	// now in sync with the other node
 
@@ -444,14 +438,18 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 	/*** PMU ***/
 	at86rf215_reg_write(pDev, AT86RF215_REG__BBC0_PMUC, 0x1f);  // PUM enable
 
-	wait_for_timer2(1);
+	wait_for_timer(1);
 
-	/*** write 0 to buffer ***/
-	//uint8_t fb_data[127] = {0};
-	//hal_frame_write(fb_data, 127);
+//#define BUFF_LEN 127
+//	/*** write 0 to buffer ***/
+//	uint8_t fb_data[BUFF_LEN] = {0};
+//	PRINTF("[inphase] fb_data: 0x%x, 0x%x\n", fb_data[2], fb_data[5]);
+//	at86rf215_txfb_write(pDev, 0, fb_data, BUFF_LEN);
+//	at86rf215_reg_write(pDev, AT86RF215_REG__BBC0_TXFLH, 0);
+//	at86rf215_reg_write(pDev, AT86RF215_REG__BBC0_TXFLL, BUFF_LEN + 2);
 	/* antenna diversity control is skipped, we only have one antenna */
 
-	//wait_for_timer2(2);
+	//wait_for_timer(2);
 
 	/* measure RSSI (initiator) */
 //	uint8_t rssi;
@@ -467,7 +465,7 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 //			break;
 //	}
 
-	wait_for_timer2(3);
+	wait_for_timer(3);
 
 	/* measure RSSI (reflector) */
 //	hal_register_write(RG_TRX_STATE, CMD_FORCE_PLL_ON);
@@ -485,7 +483,7 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 	/* TODO: set gain according to rssi */
 //	hal_register_write(RG_TST_AGC, 0x09);
 
-	wait_for_timer2(4);
+	wait_for_timer(4);
 
 	switch(mode) {
 		case PMU_MAGIC_MODE_CLASSIC:
@@ -499,6 +497,7 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 
 BAIL:
 
+	stop_timer();
 	at86rf215_reset(pDev);
 	restore_registers();
 	//watchdog_start();
