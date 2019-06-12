@@ -628,6 +628,11 @@ void statemachine(uint8_t frame_type, frame_subframe_t *frame)
 					// got all results, finished
 					fsm_state = IDLE;
 					DEBUG("[inphase] done.\n");
+					DEBUG("[inphase] PMU:");
+					for(int i=0; i<PMU_MEASUREMENTS; i++) {
+						DEBUG(" %d", signed_local_pmu_values[i]);
+					}
+					DEBUG("\n");
 				}
 			} else {
 				/* all other frames are invalid here */
