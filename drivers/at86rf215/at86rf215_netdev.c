@@ -15,6 +15,9 @@
 #include "net/netdev.h"
 #include "net/netdev/ieee802154.h"
 
+/*** InPhase ***/
+#include "inphase_conf.h"
+
 #include "at86rf215.h"
 #include "at86rf215_netdev.h"
 #include "at86rf215_internal.h"
@@ -31,11 +34,6 @@ static int _init(netdev_t *netdev);
 static void _isr(netdev_t *netdev);
 static int _get(netdev_t *netdev, netopt_t opt, void *val, size_t max_len);
 static int _set(netdev_t *netdev, netopt_t opt, const void *val, size_t len);
-
-/*** InPhase ***/
-extern volatile uint8_t sigSync;
-extern void inphase_start(at86rf2xx_t *dev);
-extern void inphase_isr(at86rf2xx_t *dev);
 
 const netdev_driver_t at86rf2xx_driver = {
     .send = _send,

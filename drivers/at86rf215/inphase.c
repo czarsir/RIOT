@@ -6,200 +6,60 @@
 
 /*** Base ***/
 #include <string.h>
-#include "xtimer.h"
+#include <xtimer.h>
 
-/*** driver ***/
+/*** Driver ***/
 #include "at86rf215.h"
 //#include "at86rf215_netdev.h"
 #include "at86rf215_internal.h"
 #include "at86rf215_registers.h"
 
+/*** Self ***/
+#include "inphase.h"
+
 #define ENABLE_DEBUG (1)
 #include "debug.h"
 #define PRINTF DEBUG
 
-
-/********* Macro *********/
-
-/*** Command ***/
-#define RANGE_REQUEST_START      0x00
-#define RANGE_REQUEST            0x01
-#define RANGE_ACCEPT             0x02
-#define TIME_SYNC_REQUEST        0x11
-#define PMU_START                0x12
-#define RESULT_REQUEST           0x21
-#define RESULT_CONFIRM           0x22
-#define NETWORK_TIMEOUT          0xFF
-
-/*** Status ***/
-#define RANGE_ACCEPT_STATUS_SUCCESS 0x10
-#define RANGE_ACCEPT_STATUS_REJECT  0x12
-#define RESULT_TYPE_PMU          0x00
-#define RESULT_TYPE_RSSI         0x01
-
-/*** Config ***/
-#define RESULT_DATA_LENGTH       100  // number of byte to send in one result frame
-#define FRAME_BUFFER_LENGTH      150
-/* Method */
-#define RANGING_METHOD_PMU       0x01
-/* Retransmission */
-#define RANGE_REQUEST_RETRANSMISSIONS  2
-#define RESULT_REQUEST_RETRANSMISSIONS 2
-
-/*** PMU ***/
-//#define PMU_START_FREQUENCY   2400  // start frequency for measurement
-#define PMU_START_FREQUENCY   0
-//#define PMU_MEASUREMENTS      200   // number of frequencies to measure
-#define PMU_MEASUREMENTS      5
-
-/*** Status codes (for SENSORS_READY) ***/
-#define DISTANCE_INVALID      0  // no measurement running, idle, ready for measurement
-#define DISTANCE_IDLE         1  // measurement is currently running
-#define DISTANCE_RUNNING      2  // measurement failed to unknown reasons
-#define DISTANCE_FAILED       3  // no AT86RF233 radio, measurement not possible
-#define DISTANCE_NO_RF233     4  // communication with reflector timed out
-#define DISTANCE_TIMEOUT      5  // reflector doesn't answer to ranging request
-#define DISTANCE_NO_REFLECTOR 6  // timing synchronization failed
-#define DISTANCE_NO_SYNC      7  // distance calculation returned wrong value
-#define DISTANCE_VALUE_ERROR  8  // synced to wrong frame (not the one send by reflector)
-#define DISTANCE_WRONG_SYNC   9
-
-
-/********* Type Definition *********/
-
-enum fsm_states {
-	IDLE,
-
-	/* Initiator States */
-	RANGING_REQUESTED,
-	RESULT_REQUESTED,
-
-	/* Reflector States */
-	RANGING_ACCEPTED,
-	WAIT_FOR_RESULT_REQ,
-};
-
-// TODO linkaddr_t -> uint16_t
-typedef struct {
-	uint16_t reflector;		// address of the reflector
-	uint16_t initiator;		// address of the initiator that issued the current measurement
-	uint8_t raw_output;			// if 1, output PMU data to serial port
-	uint8_t allow_ranging;
-	uint8_t compute;
-	uint8_t interpolate;
-	uint16_t offset;
-} Settings;
-
-typedef struct {
-	uint8_t (*init)(void);
-	uint8_t (*send)(uint16_t dest, uint8_t msg_len, void *msg);
-	uint8_t (*close)(void);
-} InphaseConnection;
-
-/*** PMU ***/
-
-typedef enum {
-	PMU_MAGIC_ROLE_INITIATOR,
-	PMU_MAGIC_ROLE_REFLECTOR
-} pmu_magic_role_t;
-
-typedef enum {
-	PMU_MAGIC_MODE_CLASSIC
-} pmu_magic_mode_t;
-
-/*** Frame ***/
-
-typedef struct {
-	uint8_t  ranging_method;
-	uint8_t  capabilities;
-} frame_range_request_t;
-
-typedef struct {
-	uint8_t ranging_accept;
-	uint8_t reject_reason;
-	uint8_t accepted_ranging_method;
-	uint8_t accepted_capabilities;
-} frame_range_accept_t;
-
-typedef struct {
-	uint8_t result_data_type;
-	uint16_t result_start_address;
-} frame_result_request_t;
-
-typedef struct {
-	uint8_t  result_data_type;
-	uint16_t result_start_address;
-	uint8_t result_length;
-	uint8_t result_data[RESULT_DATA_LENGTH];
-} frame_result_confirm_t;
-
-typedef union {
-	frame_range_request_t range_request;
-	frame_range_accept_t range_accept;
-	frame_result_request_t result_request;
-	frame_result_confirm_t result_confirm;
-} frame_subframe_t;
-
-typedef struct {
-	uint8_t frame_type;
-	frame_subframe_t content;
-} frame_range_basic_t;
-
 /********* Variables *********/
 
 /*** device ***/
-static at86rf2xx_t *pDev;
+at86rf2xx_t *pDev;
 
 /*** state ***/
-volatile enum fsm_states fsm_state = IDLE;
-Settings settings;
-uint8_t status_code;
-uint8_t next_status_code;
-uint8_t retransmissions;
-uint8_t next_result_start;
+volatile fsm_state_t fsm_state = IDLE;
+static Settings settings;
+static uint8_t status_code;
+static uint8_t next_status_code;
+static uint8_t retransmissions;
+static uint8_t next_result_start;
 
 /*** Sync ***/
 volatile uint8_t sigSync;
 
 /*** Buffer ***/
-static uint8_t fbRx[FRAME_BUFFER_LENGTH];
+uint8_t fbRx[FRAME_BUFFER_LENGTH];
 /* allocate an array for the measurement results */
-uint8_t local_pmu_values[PMU_MEASUREMENTS];
+static uint8_t local_pmu_values[PMU_MEASUREMENTS];
 /* reuse buffer to save memory */
-int8_t* signed_local_pmu_values = (int8_t*)local_pmu_values;
+static int8_t* signed_local_pmu_values = (int8_t*)local_pmu_values;
 
 /********* Functions *********/
 
+extern uint8_t inphase_connection_init(void);
+extern uint8_t inphase_connection_send(uint16_t dest, uint8_t msg_len, void *msg);
+extern uint8_t inphase_connection_close(void);
 
-
-/********* Application *******************************************************/
-
-/*** TODO ***/
-static uint8_t inphase_connection_init(void)
-{
-	return 0;
-}
-
-/*** TODO ***/
-static uint8_t inphase_connection_send(uint16_t dest, uint8_t msg_len, void *msg)
-{
-	(void)dest;
-	DEBUG("[inphase] send\n");
-	at86rf215_send(pDev, msg, msg_len);
-	return 0;
-}
-
-/*** TODO ***/
-static uint8_t inphase_connection_close(void)
-{
-	return 0;
-}
+/********* Special *********/
 
 static const InphaseConnection conn = {
 	inphase_connection_init,
 	inphase_connection_send,
 	inphase_connection_close
 };
+
+
+/********* Application *******************************************************/
 
 /********* Communication *********/
 
@@ -398,7 +258,7 @@ static void receiver_pmu(uint8_t* pmu_value)
 	*pmu_value = at86rf215_reg_read(pDev, AT86RF215_REG__BBC0_PMUVAL);
 }
 
-void pmu_magic_mode_classic(pmu_magic_role_t role)
+static void pmu_magic_mode_classic(pmu_magic_role_t role)
 {
 	uint8_t i;
 	for (i=0; i < PMU_MEASUREMENTS; i++) {
@@ -657,7 +517,7 @@ static void reset_statemachine(void)
 	status_code = next_status_code;
 }
 
-static void statemachine(uint8_t frame_type, frame_subframe_t *frame)
+void statemachine(uint8_t frame_type, frame_subframe_t *frame)
 {
 	PRINTF("[inphase] frame_type: 0x%x, fsm_state: %u\n", frame_type, fsm_state);
 
@@ -866,7 +726,7 @@ static void statemachine(uint8_t frame_type, frame_subframe_t *frame)
 	}
 }
 
-static void inphase_receive(const uint16_t *src, uint16_t msg_len, void *msg)
+void inphase_receive(const uint16_t *src, uint16_t msg_len, void *msg)
 {
 	frame_range_basic_t *frame_basic = msg;
 	uint8_t msg_accepted = 0;
@@ -928,25 +788,4 @@ static void inphase_receive(const uint16_t *src, uint16_t msg_len, void *msg)
 	} else {
 		PRINTF("[inphase] inphase_receive: discard.\n");
 	}
-}
-
-void inphase_isr(at86rf2xx_t *dev)
-{
-	DEBUG("[inphase] inphase_isr\n");
-
-	pDev = dev;
-
-	uint16_t len = at86rf215_receive(dev, fbRx, FRAME_BUFFER_LENGTH);
-	uint16_t src = 0;
-	inphase_receive(&src, len, fbRx);
-}
-
-void inphase_start(at86rf2xx_t *dev)
-{
-	DEBUG("[inphase] inphase_start\n");
-
-	pDev = dev;
-
-	fsm_state = IDLE; // reset state machine
-	statemachine(RANGE_REQUEST_START, NULL);
 }
