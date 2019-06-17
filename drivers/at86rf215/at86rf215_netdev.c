@@ -406,8 +406,7 @@ static int _get(netdev_t *netdev, netopt_t opt, void *val, size_t max_len)
 
         case NETOPT_IS_CHANNEL_CLR:
             assert(max_len >= sizeof(netopt_enable_t));
-            //*((netopt_enable_t *)val) = at86rf2xx_cca(dev);
-			inphase_start(dev);
+            *((netopt_enable_t *)val) = at86rf2xx_cca(dev);
             res = sizeof(netopt_enable_t);
             break;
 
@@ -423,6 +422,13 @@ static int _get(netdev_t *netdev, netopt_t opt, void *val, size_t max_len)
             *((netopt_enable_t *)val) = (tmp & AT86RF215_AACK_ENABLE) ? true : false;
             res = sizeof(netopt_enable_t);
             break;
+
+		case NETOPT_IPS_START:
+			assert(max_len >= sizeof(netopt_enable_t));
+			//*((netopt_enable_t *)val) = at86rf2xx_cca(dev);
+			inphase_start(dev);
+			res = sizeof(netopt_enable_t);
+			break;
 
         default:
             res = -ENOTSUP;
