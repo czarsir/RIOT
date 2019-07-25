@@ -140,7 +140,7 @@ typedef struct {
 /********* Config *********/
 
 /*** Setup an AT86RF2xx based device state ***/
-void at86rf215_setup(at86rf2xx_t *dev, const at86rf215_params_t *params);
+void at86rf215_setup(at86rf2xx_t *dev0, at86rf2xx_t *dev1, const at86rf215_params_t *params);
 
 /*** hardware? reset ***/
 void at86rf215_reset(at86rf2xx_t *dev);

@@ -23,17 +23,23 @@ extern void at86rf215_set_rx_frontend(at86rf2xx_t *dev);
 extern void at86rf215_set_bbc(at86rf2xx_t *dev);
 
 
-void at86rf215_setup(at86rf2xx_t *dev, const at86rf215_params_t *params)
+void at86rf215_setup(at86rf2xx_t *dev, at86rf2xx_t *dev1, const at86rf215_params_t *params)
 {
-    netdev_t *netdev = (netdev_t *)dev;
+	/*** initialize device descriptor ***/
 
-    netdev->driver = &at86rf2xx_driver;
-    /* initialize device descriptor */
+	/*** Transceiver 0 ***/
+	((netdev_t *)dev)->driver = &at86rf2xx_driver;
     memcpy(&dev->params, params, sizeof(at86rf215_params_t));
     dev->idle_state = AT86RF215_STATE_RF_RX;
-    /* radio state is RESET when first powered-on */
-    dev->state = AT86RF215_STATE_RF_RESET;
+    dev->state = AT86RF215_STATE_RF_RESET; //radio state is RESET when first powered-on/
     dev->pending_tx = 0;
+
+	/*** Transceiver 1 ***/
+	((netdev_t *)dev1)->driver = &at86rf2xx_driver;
+	memcpy(&dev1->params, params, sizeof(at86rf215_params_t));
+	dev1->idle_state = AT86RF215_STATE_RF_RX;
+	dev1->state = AT86RF215_STATE_RF_RESET;
+	dev1->pending_tx = 0;
 }
 
 void at86rf215_reset(at86rf2xx_t *dev)
