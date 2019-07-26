@@ -83,22 +83,6 @@ static int _init(netdev_t *netdev)
 
 	DEBUG("[rf215] init\n");
 
-	/*** test ***/
-	//gpio_init(GPIO_PIN(PORT_B, 9), GPIO_OUT);
-
-    /* initialize GPIOs */
-    spi_init_cs(dev->params.spi, dev->params.cs_pin);
-    gpio_init(dev->params.sleep_pin, GPIO_OUT);
-    gpio_clear(dev->params.sleep_pin);
-    gpio_init(dev->params.reset_pin, GPIO_OUT);
-    gpio_set(dev->params.reset_pin);
-
-	/* test */
-	uint8_t temp = at86rf215_reg_read(dev, AT86RF215_REG__PART_NUM);
-	DEBUG("[rf215] init : part number 0x%x\n", temp);
-	temp = at86rf215_reg_read(dev, AT86RF215_REG__VERSION);
-	DEBUG("[rf215] init : version %u.\n", temp);
-
 	DEBUG("[rf215] init : reset\n");
     /* reset device to default values and put it into RX state */
     at86rf215_reset(dev);

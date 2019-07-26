@@ -41,6 +41,13 @@ extern "C" {
 #define AT86RF215_REG__RF_CLKO                                  (0x0007)
 #define AT86RF215_REG__RF_IQIFC1                                (0x000B)
 
+
+/****** Blocks ******/
+#define _RF09_        (0x0100)
+#define _RF24_        (0x0200)
+#define _BBC0_        (0x0300)
+#define _BBC1_        (0x0400)
+
 /****** RF09 ***************************************/
 
 #define AT86RF215_REG__RF09_STATE                               (0x0102)

@@ -25,21 +25,51 @@ extern void at86rf215_set_bbc(at86rf2xx_t *dev);
 
 void at86rf215_setup(at86rf2xx_t *dev, at86rf2xx_t *dev1, const at86rf215_params_t *params)
 {
-	/*** initialize device descriptor ***/
+	DEBUG("[rf215] driver setup.\n");
 
+	/*** initialize device descriptor ***/
 	/*** Transceiver 0 ***/
 	((netdev_t *)dev)->driver = &at86rf2xx_driver;
     memcpy(&dev->params, params, sizeof(at86rf215_params_t));
     dev->idle_state = AT86RF215_STATE_RF_RX;
     dev->state = AT86RF215_STATE_RF_RESET; //radio state is RESET when first powered-on/
     dev->pending_tx = 0;
-
+	dev->rf = _RF09_;
+	dev->bbc = _BBC0_;
 	/*** Transceiver 1 ***/
 	((netdev_t *)dev1)->driver = &at86rf2xx_driver;
 	memcpy(&dev1->params, params, sizeof(at86rf215_params_t));
 	dev1->idle_state = AT86RF215_STATE_RF_RX;
 	dev1->state = AT86RF215_STATE_RF_RESET;
 	dev1->pending_tx = 0;
+	dev1->rf = _RF24_;
+	dev1->bbc = _BBC1_;
+
+	/****** Hardware ******/
+
+	/*** GPIOs initialize  ***/
+	spi_init_cs(dev->params.spi, dev->params.cs_pin);
+	gpio_init(dev->params.sleep_pin, GPIO_OUT);
+	gpio_clear(dev->params.sleep_pin);
+	gpio_init(dev->params.reset_pin, GPIO_OUT);
+	gpio_set(dev->params.reset_pin);
+	/*** test ***/
+	//gpio_init(GPIO_PIN(PORT_B, 9), GPIO_OUT);
+
+	/*** hardware reset ***/
+	//at86rf215_hardware_reset(dev);
+
+	/* Info */
+	uint8_t temp = at86rf215_reg_read(dev, AT86RF215_REG__PART_NUM);
+	DEBUG("[rf215] part number 0x%x\n", temp);
+	temp = at86rf215_reg_read(dev, AT86RF215_REG__VERSION);
+	DEBUG("[rf215] version %u\n", temp);
+
+	/********* Common *********/
+
+	/*** Clock Output: off ***/
+	temp = 0x0;
+	at86rf215_reg_write(dev, AT86RF215_REG__RF_CLKO, temp);
 }
 
 void at86rf215_reset(at86rf2xx_t *dev)
@@ -49,18 +79,10 @@ void at86rf215_reset(at86rf2xx_t *dev)
 
 	DEBUG("[rf215] -- reset\n");
 
-	DEBUG("[rf215] -- reset : hardware reset\n");
-    at86rf215_hardware_reset(dev);
-
 	DEBUG("[rf215] -- reset : ieee reset\n");
     netdev_ieee802154_reset(&dev->netdev);
 
 	DEBUG("[rf215] -- reset : set config\n");
-
-	/********* Common *********/
-	/*** Clock Output: off ***/
-	tmp = 0x0;
-	at86rf215_reg_write(dev, AT86RF215_REG__RF_CLKO, tmp);
 
 	/********* IEEE *********/
 	/*** MAC ***/

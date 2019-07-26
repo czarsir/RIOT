@@ -159,22 +159,3 @@ void at86rf215_configure_phy(at86rf2xx_t *dev)
     /* Return to the state we had before reconfiguring */
     at86rf215_set_state(dev, prev_state);
 }
-
-#if defined(MODULE_AT86RF233) || defined(MODULE_AT86RF231)
-void at86rf2xx_get_random(const at86rf2xx_t *dev, uint8_t *data, size_t len)
-{
-    for (size_t byteCount = 0; byteCount < len; ++byteCount) {
-        uint8_t rnd = 0;
-        for (uint8_t i = 0; i < 4; ++i) {
-            /* bit 5 and 6 of the AT86RF2XX_REG__PHY_RSSI register contain the RND_VALUE */
-            uint8_t regVal = at86rf215_reg_read(dev, AT86RF2XX_REG__PHY_RSSI)
-                             & AT86RF2XX_PHY_RSSI_MASK__RND_VALUE;
-            /* shift the two random bits first to the right and then to the correct position of the return byte */
-            regVal = regVal >> 5;
-            regVal = regVal << 2 * i;
-            rnd |= regVal;
-        }
-        data[byteCount] = rnd;
-    }
-}
-#endif
