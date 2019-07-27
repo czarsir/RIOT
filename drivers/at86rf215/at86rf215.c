@@ -91,6 +91,9 @@ void at86rf215_reset(at86rf2xx_t *dev)
     /* make sure we mark the address as non-multicast and not globally unique */
     addr_long.uint8[0] &= ~(0x01);
     addr_long.uint8[0] |=  (0x02);
+	if(dev->rf == _RF24_) {
+		addr_long.uint8[0] += 0x08;
+	}
     /* set short and long address */
     at86rf215_set_addr_long(dev, ntohll(addr_long.uint64.u64));
     at86rf215_set_addr_short(dev, ntohs(addr_long.uint16[0].u16));
