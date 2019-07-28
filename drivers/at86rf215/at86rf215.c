@@ -128,12 +128,12 @@ void at86rf215_reset(at86rf2xx_t *dev)
 	/********* Baseband Configuration *********/
 	at86rf215_set_bbc(dev);
 	/* PHY Control */
-	tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_PC);
+	tmp = at86rf215_reg_read(dev, dev->bbc|AT86RF215_REG__PC);
 	tmp &= ~(AT86RF215_FCSFE_ENABLE); // 0: disable. // easy to test for now.
 	tmp |= AT86RF215_FCST; // 1: 16-bit.
 	tmp &= ~(AT86RF215_PT_M);
 	tmp |= 0x1; // 1: MR-FSK, 2: MR-OFDM, 3: MR-O-QPSK.
-	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_PC, tmp);
+	at86rf215_reg_write(dev, dev->bbc|AT86RF215_REG__PC, tmp);
 
     /********* Options *********/
 	/*** Auto Mode ***/

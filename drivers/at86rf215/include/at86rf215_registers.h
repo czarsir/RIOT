@@ -75,7 +75,7 @@ extern "C" {
 
 #define AT86RF215_REG__BBC0_IRQS                                (0x0002)
 #define AT86RF215_REG__BBC0_IRQM                                (0x0300)
-#define AT86RF215_REG__BBC0_PC                                  (0x0301)
+#define AT86RF215_REG__PC                                       (0x0001)
 /* RX Frame */
 #define AT86RF215_REG__BBC0_RXFLL                               (0x0304)
 #define AT86RF215_REG__BBC0_RXFLH                               (0x0305)
@@ -96,12 +96,12 @@ extern "C" {
 #define AT86RF215_REG__BBC0_AMCS                                (0x0340)
 
 /****** FSK ******/
-#define AT86RF215_REG__BBC0_FSKC0                               (0x0360)
-#define AT86RF215_REG__BBC0_FSKC1                               (0x0361)
-#define AT86RF215_REG__BBC0_FSKC2                               (0x0362)
-#define AT86RF215_REG__BBC0_FSKC3                               (0x0363)
-#define AT86RF215_REG__BBC0_FSKPLL                              (0x0365)
-#define AT86RF215_REG__BBC0_FSKPHRTX                            (0x036A)
+#define AT86RF215_REG__FSKC0                                    (0x0060)
+#define AT86RF215_REG__FSKC1                                    (0x0061)
+#define AT86RF215_REG__FSKC2                                    (0x0062)
+#define AT86RF215_REG__FSKC3                                    (0x0063)
+#define AT86RF215_REG__FSKPLL                                   (0x0065)
+#define AT86RF215_REG__FSKPHRTX                                 (0x006A)
 #define AT86RF215_REG__FSKDM                                    (0x0072)
 
 /*** PMU ***/

@@ -368,31 +368,31 @@ void at86rf215_set_bbc(at86rf2xx_t *dev)
 	/*** [FSKC1] Symbol Rate ***/
 	/* FSKPLH: FSK Preamble Length High Byte | FI | - | SRATE */
 	tmp = 0x5; // 0x5: 400 kHz.
-	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_FSKC1, tmp);
+	at86rf215_reg_write(dev, dev->bbc|AT86RF215_REG__FSKC1, tmp);
 
 	/*** [FSKC2] ***/
-	tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_FSKC2);
+	tmp = at86rf215_reg_read(dev, dev->bbc|AT86RF215_REG__FSKC2);
 	/* Receiver Override */
 	tmp &= ~(AT86RF215_BBCn_FSK__RXO_M);
 	tmp |= (0x3 << 5); // 0x3: disable.
 	/* Preamble Time Out */
 	tmp &= ~(AT86RF215_BBCn_FSK__RXPTO_M);
 	tmp |= (0x1 << 4); // 0x1: enable.
-	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_FSKC2, tmp);
+	at86rf215_reg_write(dev, dev->bbc|AT86RF215_REG__FSKC2, tmp);
 
 	/*** FSK Preamble ***/
 	/* Length Low Byte */
 	tmp = 0xa; // default: 0x8; // for 400kHz: 0xa.
-	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_FSKPLL, tmp);
+	at86rf215_reg_write(dev, dev->bbc|AT86RF215_REG__FSKPLL, tmp);
 	/* preamble detector sensitivity */
-//	tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_FSKC3);
+//	tmp = at86rf215_reg_read(dev, AT86RF215_REG__FSKC3);
 //	tmp &= ~(AT86RF215_BBCn_FSK__PDT_M);
 //	tmp |= (0x5); // default: 0x5.
-//	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_FSKC3, tmp);
+//	at86rf215_reg_write(dev, AT86RF215_REG__FSKC3, tmp);
 
 	/*** SFD | DW ***/
 	tmp = (0x0 << 3) | (0x1 << 2); // SFD0 // DW: enable.
-	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_FSKPHRTX, tmp);
+	at86rf215_reg_write(dev, dev->bbc|AT86RF215_REG__FSKPHRTX, tmp);
 }
 
 /********* State *********/
