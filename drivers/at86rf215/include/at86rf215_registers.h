@@ -40,11 +40,13 @@ extern "C" {
 #define AT86RF215_REG__RF_CFG                                   (0x0006)
 #define AT86RF215_REG__RF_CLKO                                  (0x0007)
 #define AT86RF215_REG__RF_IQIFC1                                (0x000B)
-
+/* IRQ status */
 #define AT86RF215_REG__RF09_IRQS                                (0x0000)
 #define AT86RF215_REG__RF24_IRQS                                (0x0001)
+#define AT86RF215_REG__BBC0_IRQS                                (0x0002)
+#define AT86RF215_REG__BBC1_IRQS                                (0x0003)
 
-/****** Blocks ******/
+/****** Blocks ***********************************/
 #define _RF09_        (0x0100)
 #define _RF24_        (0x0200)
 #define _BBC0_        (0x0300)
@@ -73,8 +75,7 @@ extern "C" {
 
 /****** BBC ***************************************/
 
-#define AT86RF215_REG__BBC0_IRQS                                (0x0002)
-#define AT86RF215_REG__BBC0_IRQM                                (0x0300)
+#define AT86RF215_REG__IRQM                                     (0x0000)
 #define AT86RF215_REG__PC                                       (0x0001)
 /* RX Frame */
 #define AT86RF215_REG__BBC0_RXFLL                               (0x0304)

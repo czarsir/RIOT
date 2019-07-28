@@ -158,7 +158,7 @@ void at86rf215_reset(at86rf2xx_t *dev)
 //	tmp |= 0x3;
 //	at86rf215_reg_write(dev, AT86RF215_REG__RF_CFG, tmp);
 	//at86rf215_reg_write(dev, AT86RF215_REG__BBC0_IRQM, AT86RF215_BBCn_IRQM__RXFS_M);
-	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_IRQM, AT86RF215_BBCn_IRQM__RXFE_M);
+	at86rf215_reg_write(dev, dev->bbc|AT86RF215_REG__IRQM, AT86RF215_BBCn_IRQM__RXFE_M);
 	/*** clear IRQs ***/
 	at86rf215_reg_read(dev, AT86RF215_REG__RF09_IRQS);
 	at86rf215_reg_read(dev, AT86RF215_REG__BBC0_IRQS);
