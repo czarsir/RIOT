@@ -132,12 +132,12 @@ void at86rf215_configure_phy(at86rf2xx_t *dev)
 //    at86rf215_reg_write(dev, AT86RF2XX_REG__PHY_CC_CCA, phy_cc_cca);
 
 	/*** Channel ***/
-	at86rf215_reg_write(dev, AT86RF215_REG__RF09_CS, 0x30);
-	at86rf215_reg_write(dev, AT86RF215_REG__RF09_CCF0L, 0xF1);
-	at86rf215_reg_write(dev, AT86RF215_REG__RF09_CCF0H, 0x86);
-	at86rf215_reg_write(dev, AT86RF215_REG__RF09_CNL, dev->netdev.chan);
+	at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__CS, 0x30);
+	at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__CCF0L, 0xF1);
+	at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__CCF0H, 0x86);
+	at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__CNL, dev->netdev.chan);
 	/*** channel scheme ***/
-	at86rf215_reg_write(dev, AT86RF215_REG__RF09_CNM, 0);
+	at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__CNM, 0);
 
     /* Update the TX power register to achieve the same power (in dBm) */
 	// TODO

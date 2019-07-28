@@ -55,11 +55,11 @@ extern "C" {
 #define AT86RF215_REG__STATE                                    (0x0002)
 #define AT86RF215_REG__CMD                                      (0x0003)
 /* channel */
-#define AT86RF215_REG__RF09_CS                                  (0x0104)
-#define AT86RF215_REG__RF09_CCF0L                               (0x0105)
-#define AT86RF215_REG__RF09_CCF0H                               (0x0106)
-#define AT86RF215_REG__RF09_CNL                                 (0x0107)
-#define AT86RF215_REG__RF09_CNM                                 (0x0108)
+#define AT86RF215_REG__CS                                       (0x0004)
+#define AT86RF215_REG__CCF0L                                    (0x0005)
+#define AT86RF215_REG__CCF0H                                    (0x0006)
+#define AT86RF215_REG__CNL                                      (0x0007)
+#define AT86RF215_REG__CNM                                      (0x0008)
 /* RX */
 #define AT86RF215_REG__RF09_RXBWC                               (0x0109)
 #define AT86RF215_REG__RF09_RXDFE                               (0x010A)
