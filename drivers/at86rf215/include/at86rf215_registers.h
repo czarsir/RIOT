@@ -82,7 +82,9 @@ extern "C" {
 /* TX Frame */
 #define AT86RF215_REG__BBC0_TXFLL                               (0x0306)
 #define AT86RF215_REG__BBC0_TXFLH                               (0x0307)
-#define AT86RF215_REG__BBC0_AFC0                                (0x0320)
+
+/*** Filter ***/
+#define AT86RF215_REG__AFC0                                     (0x0020)
 
 /****** IEEE ******/
 #define AT86RF215_REG__IEEE_MACEA_0                             (0x0025)

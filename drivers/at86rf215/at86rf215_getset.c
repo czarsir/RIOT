@@ -267,10 +267,10 @@ void at86rf2xx_set_option(at86rf2xx_t *dev, uint16_t option, bool state)
 //                          : (tmp & ~AT86RF2XX_CSMA_SEED_1__AACK_DIS_ACK);
 //            at86rf215_reg_write(dev, AT86RF2XX_REG__CSMA_SEED_1, tmp);
             /* enable/disable promiscuous mode */
-            tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_AFC0);
+            tmp = at86rf215_reg_read(dev, dev->bbc|AT86RF215_REG__AFC0);
             tmp = (state) ? (tmp |  AT86RF215_PM_ENABLE)
                           : (tmp & ~AT86RF215_PM_ENABLE);
-            at86rf215_reg_write(dev, AT86RF215_REG__BBC0_AFC0, tmp);
+            at86rf215_reg_write(dev, dev->bbc|AT86RF215_REG__AFC0, tmp);
             break;
         case AT86RF215_OPT_AUTOACK:
             DEBUG("[rf215] opt: %s auto ACKs\n",
