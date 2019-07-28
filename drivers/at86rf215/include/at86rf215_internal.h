@@ -59,9 +59,6 @@ void at86rf215_configure_phy(at86rf2xx_t *dev);
 
 /********* State *********/
 
-/* Get state */
-uint8_t at86rf215_get_state(const at86rf2xx_t *dev);
-
 /* Make sure that device is not sleeping */
 void at86rf215_assert_awake(at86rf2xx_t *dev);
 

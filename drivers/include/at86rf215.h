@@ -26,23 +26,20 @@ extern "C" {
 /*** Maximum possible packet size in byte ***/
 #define AT86RF215_MAX_PKT_LENGTH        (IEEE802154_FRAME_LEN_MAX)
 
-// TODO subG and 2.4G
-/*** Channel configuration ***/
-#ifdef MODULE_AT86RF212B
-/* the AT86RF212B has a sub-1GHz radio */
-#define AT86RF2XX_MIN_CHANNEL           (IEEE802154_CHANNEL_MIN_SUBGHZ)
-#define AT86RF2XX_MAX_CHANNEL           (IEEE802154_CHANNEL_MAX_SUBGHZ)
-#define AT86RF2XX_DEFAULT_CHANNEL       (IEEE802154_DEFAULT_SUBGHZ_CHANNEL)
-#define AT86RF2XX_DEFAULT_PAGE          (IEEE802154_DEFAULT_SUBGHZ_PAGE)
-#else
-#define AT86RF2XX_MIN_CHANNEL           (IEEE802154_CHANNEL_MIN)
-#define AT86RF2XX_MAX_CHANNEL           (IEEE802154_CHANNEL_MAX)
-#define AT86RF2XX_DEFAULT_CHANNEL       (IEEE802154_DEFAULT_CHANNEL)
-#endif
+/*** Channel ***/
+/* subG: 0-10 */
+#define AT86RF215_SUB_CH_MIN            (IEEE802154_CHANNEL_MIN_SUBGHZ)  // 0
+#define AT86RF215_SUB_CH_MAX            (IEEE802154_CHANNEL_MAX_SUBGHZ)  // 10
+#define AT86RF215_SUB_CH_DEF            (IEEE802154_DEFAULT_SUBGHZ_CHANNEL)  // 5
+/* 2.4G: 11-26 */
+#define AT86RF215_24_CH_MIN             (IEEE802154_CHANNEL_MIN)  // 11
+#define AT86RF215_24_CH_MAX             (IEEE802154_CHANNEL_MAX)  // 26
+#define AT86RF215_24_CH_DEF             (IEEE802154_DEFAULT_CHANNEL)  // 26
+
 /*** Default PAN ID ***/
-#define AT86RF215_DEFAULT_PANID         (IEEE802154_DEFAULT_PANID)
-/*** Default TX power (0dBm) ***/
-#define AT86RF215_DEFAULT_TXPOWER       (IEEE802154_DEFAULT_TXPOWER)
+#define AT86RF215_DEFAULT_PANID         (IEEE802154_DEFAULT_PANID)  // (0x0023U)
+/*** Default TX power ***/
+#define AT86RF215_DEFAULT_TXPOWER       (IEEE802154_DEFAULT_TXPOWER)  // 0 dBm
 /*** Base (minimal) RSSI value in dBm ***/
 #define RSSI_BASE_VAL                   (-91)
 
@@ -156,6 +153,10 @@ uint64_t at86rf215_get_addr_long(const at86rf2xx_t *dev);
 // TODO test: address reverse???
 void at86rf215_set_addr_long(at86rf2xx_t *dev, uint64_t addr);
 
+/*** PAN ID ***/
+uint16_t at86rf215_get_pan(const at86rf2xx_t *dev);
+void at86rf215_set_pan(at86rf2xx_t *dev, uint16_t pan);
+
 // TODO
 /*** channel number ***/
 uint8_t at86rf215_get_chan(const at86rf2xx_t *dev);
@@ -164,10 +165,6 @@ void at86rf215_set_chan(at86rf2xx_t *dev, uint8_t chan);
 /*** channel page (NOT support) ***/
 uint8_t at86rf215_get_page(const at86rf2xx_t *dev);
 void at86rf215_set_page(at86rf2xx_t *dev, uint8_t page);
-
-/*** PAN ID ***/
-uint16_t at86rf215_get_pan(const at86rf2xx_t *dev);
-void at86rf215_set_pan(at86rf2xx_t *dev, uint16_t pan);
 
 // TODO
 /*** transmission power [dBm] ***/
@@ -210,6 +207,7 @@ int8_t at86rf2xx_get_ed_level(at86rf2xx_t *dev);
 
 /********* State *********/
 
+uint8_t at86rf215_get_state(const at86rf2xx_t *dev);
 uint8_t at86rf215_set_state(at86rf2xx_t *dev, uint8_t state);
 
 /********* Option *********/

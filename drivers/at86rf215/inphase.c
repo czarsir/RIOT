@@ -238,15 +238,15 @@ static void setFrequency(uint16_t f, uint8_t offset)
 
 static void sender_pmu(void)
 {
-	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CMD, AT86RF215_STATE_RF_TXPREP);
-	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CMD, AT86RF215_STATE_RF_TX);
+	at86rf215_reg_write(pDev,  pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TXPREP);
+	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TX);
 	xtimer_usleep(85);	// wait for receiver to measure
 }
 
 static void receiver_pmu(uint8_t* pmu_value)
 {
-	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CMD, AT86RF215_STATE_RF_TXPREP);
-	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CMD, AT86RF215_STATE_RF_RX);
+	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TXPREP);
+	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_RX);
 	xtimer_usleep(45); // wait for sender to be ready
 
 	*pmu_value = at86rf215_reg_read(pDev, AT86RF215_REG__BBC0_PMUVAL);

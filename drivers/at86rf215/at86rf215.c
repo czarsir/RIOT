@@ -100,6 +100,14 @@ void at86rf215_reset(at86rf2xx_t *dev)
     /*** set default PAN id ***/
     at86rf215_set_pan(dev, AT86RF215_DEFAULT_PANID);
 
+	/********* IEEE Channel *********/
+	/* set default channel */
+	if(dev->rf == _RF24_) {
+		at86rf215_set_chan(dev, AT86RF215_24_CH_DEF);
+	} else {
+		at86rf215_set_chan(dev, AT86RF215_SUB_CH_DEF);
+		//at86rf215_set_chan(dev, 2);  // ch2: 863.625MHz / 1.2MHz.
+	}
 
 	/********* Operating Modes *********/
 	/* baseband mode (default) */
@@ -107,9 +115,6 @@ void at86rf215_reset(at86rf2xx_t *dev)
 
 
 	/********* Analog & Digital Frontend *********/
-	/*** Channel Configuration ***/
-    /* set default channel */
-    at86rf215_set_chan(dev, AT86RF2XX_DEFAULT_CHANNEL); // ch2: 863.625MHz / 1.2MHz.
 	/*** Transmitter Frontend ***/
 	at86rf215_set_tx_frontend(dev);
     /* TX power (default: maximum 31) */
@@ -259,13 +264,13 @@ void at86rf215_tx_exec(const at86rf2xx_t *dev)
 
     /* trigger sending of pre-loaded frame */
 	//DEBUG("[rf215] -- tx_exec : set state (TXPREP)\n");
-	at86rf215_reg_write(dev, AT86RF215_REG__RF09_CMD, AT86RF215_STATE_RF_TXPREP);
+	at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TXPREP);
 	do {
-		tmp = at86rf215_reg_read(dev, AT86RF215_REG__RF09_STATE)
+		tmp = at86rf215_reg_read(dev, dev->rf|AT86RF215_REG__STATE)
 				& AT86RF215_RFn_STATE_MASK;
 	} while ( tmp != AT86RF215_STATE_RF_TXPREP );
 	DEBUG("[rf215] -- tx_exec : set state (TX)\n");
-    at86rf215_reg_write(dev, AT86RF215_REG__RF09_CMD, AT86RF215_STATE_RF_TX);
+    at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TX);
     if (netdev->event_callback &&
         (dev->netdev.flags & AT86RF2XX_OPT_TELL_TX_START)) {
         netdev->event_callback(netdev, NETDEV_EVENT_TX_STARTED);
@@ -281,11 +286,11 @@ void at86rf215_tx_exec_tail(const at86rf2xx_t *dev)
 //		tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_IRQS);
 //	} while ( !(tmp|AT86RF215_BBCn_IRQS__TXFE_M) );
 	do {
-		tmp = at86rf215_reg_read(dev, AT86RF215_REG__RF09_STATE)
+		tmp = at86rf215_reg_read(dev, dev->rf|AT86RF215_REG__STATE)
 				& AT86RF215_RFn_STATE_MASK;
 	} while ( tmp != AT86RF215_STATE_RF_TXPREP );
 	/* change to RX */
-	at86rf215_reg_write(dev, AT86RF215_REG__RF09_CMD, AT86RF215_STATE_RF_RX);
+	at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_RX);
 
 	/*** enable baseband ***/
 //	tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_PC);

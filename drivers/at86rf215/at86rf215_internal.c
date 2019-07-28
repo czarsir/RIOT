@@ -82,17 +82,6 @@ void at86rf215_rxfb_stop(const at86rf2xx_t *dev)
     spi_release(SPIDEV);
 }
 
-uint8_t at86rf215_get_state(const at86rf2xx_t *dev)
-{
-    /* if sleeping immediately return state */
-    if (dev->state == AT86RF215_STATE_RF_SLEEP) {
-        return dev->state;
-    }
-
-    return (at86rf215_reg_read(dev, AT86RF215_REG__RF09_STATE)
-            & AT86RF215_RFn_STATE_MASK);
-}
-
 void at86rf215_assert_awake(at86rf2xx_t *dev)
 {
     if (at86rf215_get_state(dev) == AT86RF215_STATE_RF_SLEEP) {
@@ -101,8 +90,7 @@ void at86rf215_assert_awake(at86rf2xx_t *dev)
         xtimer_usleep(AT86RF215_WAKEUP_DELAY);
 
         do {
-            dev->state = at86rf215_reg_read(dev, AT86RF215_REG__RF09_STATE)
-                         & AT86RF215_RFn_STATE_MASK;
+            dev->state = at86rf215_get_state(dev);
         } while (dev->state != AT86RF215_STATE_RF_TRXOFF);
     }
 }
@@ -118,14 +106,12 @@ void at86rf215_hardware_reset(at86rf2xx_t *dev)
     xtimer_usleep(AT86RF215_RESET_DELAY);
 
 	/*** test ***/
-	dev->state = at86rf215_reg_read(dev, AT86RF215_REG__RF09_STATE)
-					& AT86RF215_RFn_STATE_MASK;
+	dev->state = at86rf215_get_state(dev);
 	DEBUG("[rf215] -- -- hardware_reset : state 0x%x\n", dev->state);
 
     /* at86rf215: automatically end up in state TRXOFF */
     do {
-        dev->state = at86rf215_reg_read(dev, AT86RF215_REG__RF09_STATE)
-                     & AT86RF215_RFn_STATE_MASK;
+        dev->state = at86rf215_get_state(dev);
 	} while (dev->state != AT86RF215_STATE_RF_TRXOFF);
 }
 

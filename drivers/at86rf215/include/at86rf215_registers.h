@@ -41,6 +41,8 @@ extern "C" {
 #define AT86RF215_REG__RF_CLKO                                  (0x0007)
 #define AT86RF215_REG__RF_IQIFC1                                (0x000B)
 
+#define AT86RF215_REG__RF09_IRQS                                (0x0000)
+#define AT86RF215_REG__RF24_IRQS                                (0x0001)
 
 /****** Blocks ******/
 #define _RF09_        (0x0100)
@@ -48,11 +50,10 @@ extern "C" {
 #define _BBC0_        (0x0300)
 #define _BBC1_        (0x0400)
 
-/****** RF09 ***************************************/
+/****** RF ***************************************/
 
-#define AT86RF215_REG__RF09_STATE                               (0x0102)
-#define AT86RF215_REG__RF09_CMD                                 (0x0103)
-#define AT86RF215_REG__RF09_IRQS                                (0x0000)
+#define AT86RF215_REG__STATE                                    (0x0002)
+#define AT86RF215_REG__CMD                                      (0x0003)
 /* channel */
 #define AT86RF215_REG__RF09_CS                                  (0x0104)
 #define AT86RF215_REG__RF09_CCF0L                               (0x0105)
@@ -70,7 +71,7 @@ extern "C" {
 #define AT86RF215_REG__RF09_TXDFE                               (0x0113)
 #define AT86RF215_REG__RF09_PAC                                 (0x0114)
 
-/****** BBC0 ***************************************/
+/****** BBC ***************************************/
 
 #define AT86RF215_REG__BBC0_IRQS                                (0x0002)
 #define AT86RF215_REG__BBC0_IRQM                                (0x0300)
@@ -84,12 +85,12 @@ extern "C" {
 #define AT86RF215_REG__BBC0_AFC0                                (0x0320)
 
 /****** IEEE ******/
-#define AT86RF215_REG__IEEE_MACEA_0                             (0x0325)
-//#define AT86RF215_REG__IEEE_MACEA_1                             (0x0326)
-#define AT86RF215_REG__IEEE_MACPID0_0                           (0x032D)
-#define AT86RF215_REG__IEEE_MACPID0_1                           (0x032E)
-#define AT86RF215_REG__IEEE_MACSHA0_0                           (0x032F)
-#define AT86RF215_REG__IEEE_MACSHA0_1                           (0x0330)
+#define AT86RF215_REG__IEEE_MACEA_0                             (0x0025)
+//#define AT86RF215_REG__IEEE_MACEA_1                             (0x0026)
+#define AT86RF215_REG__IEEE_MACPID0_0                           (0x002D)
+#define AT86RF215_REG__IEEE_MACPID0_1                           (0x002E)
+#define AT86RF215_REG__IEEE_MACSHA0_0                           (0x002F)
+#define AT86RF215_REG__IEEE_MACSHA0_1                           (0x0030)
 
 /* Auto Mode */
 #define AT86RF215_REG__BBC0_AMCS                                (0x0340)
@@ -112,9 +113,6 @@ extern "C" {
 /* TX Frame Buffer */
 #define AT86RF215_REG__BBC0_FBTXS                               (0x2800)
 
-/****** RF24 ***************************************/
-
-#define AT86RF215_REG__RF24_IRQS                                (0x0001)
 
 
 /**
@@ -173,7 +171,7 @@ extern "C" {
 #define AT86RF2XX_REG__TST_CTRL_DIGI                            (0x36)
 /** @} */
 
-/****** Mask ***************************************/
+/****** Register masks *****************************************************/
 
 /*** RF ***/
 #define AT86RF215_RFn_STATE_MASK                                (0x07)

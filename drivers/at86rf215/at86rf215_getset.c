@@ -13,6 +13,8 @@
 #include "debug.h"
 
 
+/********* IEEE802.15.4 MAC *********/
+
 uint16_t at86rf215_get_addr_short(const at86rf2xx_t *dev)
 {
     return (dev->netdev.short_addr[1] << 8) | dev->netdev.short_addr[0];
@@ -27,9 +29,9 @@ void at86rf215_set_addr_short(at86rf2xx_t *dev, uint16_t addr)
      * 0 for unicast addresses */
     dev->netdev.short_addr[0] &= 0x7F;
 #endif
-    at86rf215_reg_write(dev, AT86RF215_REG__IEEE_MACSHA0_1,
+    at86rf215_reg_write(dev, dev->bbc|AT86RF215_REG__IEEE_MACSHA0_1,
                         dev->netdev.short_addr[1]);
-    at86rf215_reg_write(dev, AT86RF215_REG__IEEE_MACSHA0_0,
+    at86rf215_reg_write(dev, dev->bbc|AT86RF215_REG__IEEE_MACSHA0_0,
                         dev->netdev.short_addr[0]);
 }
 
@@ -48,10 +50,27 @@ void at86rf215_set_addr_long(at86rf2xx_t *dev, uint64_t addr)
 {
     for (int i = 0; i < 8; i++) {
         dev->netdev.long_addr[i] = (uint8_t)(addr >> (i * 8));
-        at86rf215_reg_write(dev, (AT86RF215_REG__IEEE_MACEA_0 + i), (addr >> ((7 - i) * 8)));
-		//at86rf215_reg_write(dev, (AT86RF215_REG__IEEE_MACEA_0 + i), (addr >> (i * 8)));
+        at86rf215_reg_write(dev, ((dev->bbc|AT86RF215_REG__IEEE_MACEA_0) + i), (addr >> ((7 - i) * 8)));
+		//at86rf215_reg_write(dev, (dev->bbc|AT86RF215_REG__IEEE_MACEA_0 + i), (addr >> (i * 8)));
     }
 }
+
+uint16_t at86rf215_get_pan(const at86rf2xx_t *dev)
+{
+	return dev->netdev.pan;
+}
+
+void at86rf215_set_pan(at86rf2xx_t *dev, uint16_t pan)
+{
+	le_uint16_t le_pan = byteorder_btols(byteorder_htons(pan));
+
+	dev->netdev.pan = pan;
+	DEBUG("[rf215] pan0: %u, pan1: %u\n", le_pan.u8[0], le_pan.u8[1]);
+	at86rf215_reg_write(dev, dev->bbc|AT86RF215_REG__IEEE_MACPID0_0, le_pan.u8[0]);
+	at86rf215_reg_write(dev, dev->bbc|AT86RF215_REG__IEEE_MACPID0_1, le_pan.u8[1]);
+}
+
+/********* IEEE802.15.4 channel *********/
 
 uint8_t at86rf215_get_chan(const at86rf2xx_t *dev)
 {
@@ -60,15 +79,19 @@ uint8_t at86rf215_get_chan(const at86rf2xx_t *dev)
 
 void at86rf215_set_chan(at86rf2xx_t *dev, uint8_t channel)
 {
-//    if ((channel > AT86RF2XX_MAX_CHANNEL) ||
-//#if AT86RF2XX_MIN_CHANNEL /* is zero for sub-GHz */
-//        (channel < AT86RF2XX_MIN_CHANNEL) ||
-//#endif
-//        (dev->netdev.chan == channel)) {
-//        return;
-//    }
+	if(dev->rf == _RF24_) {
+		if ((channel > AT86RF215_24_CH_MAX) ||
+			(channel < AT86RF215_24_CH_MIN) ||
+			(dev->netdev.chan == channel)) {
+			return;
+		}
+	} else {
+		if ((channel > AT86RF215_SUB_CH_MAX) ||
+			(dev->netdev.chan == channel)) {
+			return;
+		}
+	}
 
-	channel = 2;
     dev->netdev.chan = channel;
 
     at86rf215_configure_phy(dev);
@@ -84,21 +107,6 @@ void at86rf215_set_page(at86rf2xx_t *dev, uint8_t page)
 {
     (void) dev;
     (void) page;
-}
-
-uint16_t at86rf215_get_pan(const at86rf2xx_t *dev)
-{
-    return dev->netdev.pan;
-}
-
-void at86rf215_set_pan(at86rf2xx_t *dev, uint16_t pan)
-{
-    le_uint16_t le_pan = byteorder_btols(byteorder_htons(pan));
-
-    dev->netdev.pan = pan;
-    DEBUG("[rf215] pan0: %u, pan1: %u\n", le_pan.u8[0], le_pan.u8[1]);
-    at86rf215_reg_write(dev, AT86RF215_REG__IEEE_MACPID0_0, le_pan.u8[0]);
-    at86rf215_reg_write(dev, AT86RF215_REG__IEEE_MACPID0_1, le_pan.u8[1]);
 }
 
 int16_t at86rf215_get_txpower(const at86rf2xx_t *dev)
@@ -389,9 +397,20 @@ void at86rf215_set_bbc(at86rf2xx_t *dev)
 
 /********* State *********/
 
+uint8_t at86rf215_get_state(const at86rf2xx_t *dev)
+{
+	/* if sleeping immediately return state */
+	if (dev->state == AT86RF215_STATE_RF_SLEEP) {
+		return dev->state;
+	}
+
+	return (at86rf215_reg_read(dev, dev->rf|AT86RF215_REG__STATE)
+			& AT86RF215_RFn_STATE_MASK);
+}
+
 static inline void _set_state(at86rf2xx_t *dev, uint8_t state)
 {
-    at86rf215_reg_write(dev, AT86RF215_REG__RF09_CMD, state);
+    at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__CMD, state);
 
     /* possible race condition in RX_AACK_ON state ??? */
 	while (at86rf215_get_state(dev) != state) {}
@@ -403,7 +422,7 @@ uint8_t at86rf215_set_state(at86rf2xx_t *dev, uint8_t state)
 {
     uint8_t old_state;
 
-	DEBUG("[rf215] -- -- set_state 0x%x\n", state);
+	DEBUG("[rf215] [state] set 0x%x\n", state);
 
 	/* make sure there is no ongoing transmission */
 	/* or state transition already in progress */
@@ -416,7 +435,7 @@ uint8_t at86rf215_set_state(at86rf2xx_t *dev, uint8_t state)
 	}
 
     if (state == AT86RF215_STATE_RF_TRXOFF) {
-		DEBUG("[rf215] -- -- set_state : TRX_OFF\n");
+		DEBUG("[rf215] [state] set TRX_OFF\n");
 		_set_state(dev, AT86RF215_STATE_RF_TRXOFF);
     }
     else {

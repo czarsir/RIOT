@@ -464,14 +464,18 @@ static int _set(netdev_t *netdev, netopt_t opt, const void *val, size_t len)
         case NETOPT_CHANNEL:
             assert(len == sizeof(uint16_t));
             uint8_t chan = (((const uint16_t *)val)[0]) & UINT8_MAX;
-#if AT86RF2XX_MIN_CHANNEL
-            if (chan < AT86RF2XX_MIN_CHANNEL || chan > AT86RF2XX_MAX_CHANNEL) {
-#else
-            if (chan > AT86RF2XX_MAX_CHANNEL) {
-#endif /* AT86RF2XX_MIN_CHANNEL */
-                res = -EINVAL;
-                break;
-            }
+			if(dev->rf == _RF24_) {
+				if ((chan > AT86RF215_24_CH_MAX) ||
+					(chan < AT86RF215_24_CH_MIN)) {
+					res = -EINVAL;
+					break;
+				}
+			} else {
+				if (chan > AT86RF215_SUB_CH_MAX) {
+					res = -EINVAL;
+					break;
+				}
+			}
             at86rf215_set_chan(dev, chan);
             /* don't set res to set netdev_ieee802154_t::chan */
             break;
