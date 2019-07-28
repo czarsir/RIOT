@@ -176,7 +176,7 @@ static void backup_registers(void)
 	rfCNL = at86rf215_reg_read(pDev, pDev->rf|AT86RF215_REG__CNL);
 
 	/*** Interrupt ***/
-	bbcIRQ = at86rf215_reg_read(pDev, AT86RF215_REG__BBC0_IRQM);
+	bbcIRQ = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__IRQM);
 }
 
 static void restore_registers(void)
@@ -322,10 +322,10 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 	/*** Sync config ***/
 	switch (role) {
 		case PMU_MAGIC_ROLE_INITIATOR:
-			at86rf215_reg_write(pDev, AT86RF215_REG__BBC0_IRQM, AT86RF215_BBCn_IRQM__RXFE_M);
+			at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__IRQM, AT86RF215_BBCn_IRQM__RXFE_M);
 			break;
 		case PMU_MAGIC_ROLE_REFLECTOR:
-			at86rf215_reg_write(pDev, AT86RF215_REG__BBC0_IRQM, AT86RF215_BBCn_IRQM__TXFE_M);
+			at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__IRQM, AT86RF215_BBCn_IRQM__TXFE_M);
 			break;
 		default:
 			break;
@@ -375,7 +375,7 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 		ret_val = -1; // DIG2 signal not seen, abort!
 		goto BAIL;
 	}
-	at86rf215_reg_write(pDev, AT86RF215_REG__BBC0_IRQM, 0);
+	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__IRQM, 0);
 	at86rf215_reg_read(pDev, AT86RF215_REG__BBC0_IRQS);
 
 	if (role == PMU_MAGIC_ROLE_REFLECTOR) {
