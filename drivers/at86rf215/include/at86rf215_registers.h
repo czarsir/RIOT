@@ -61,15 +61,15 @@ extern "C" {
 #define AT86RF215_REG__CNL                                      (0x0007)
 #define AT86RF215_REG__CNM                                      (0x0008)
 /* RX */
-#define AT86RF215_REG__RF09_RXBWC                               (0x0109)
-#define AT86RF215_REG__RF09_RXDFE                               (0x010A)
-#define AT86RF215_REG__RF09_AGCC                                (0x010B)
-#define AT86RF215_REG__RF09_AGCS                                (0x010C)
-#define AT86RF215_REG__RF09_EDC                                 (0x010E)
+#define AT86RF215_REG__RXBWC                                    (0x0009)
+#define AT86RF215_REG__RXDFE                                    (0x000A)
+#define AT86RF215_REG__AGCC                                     (0x000B)
+#define AT86RF215_REG__AGCS                                     (0x000C)
+#define AT86RF215_REG__EDC                                      (0x000E)
 /* TX */
-#define AT86RF215_REG__RF09_TXCUTC                              (0x0112)
-#define AT86RF215_REG__RF09_TXDFE                               (0x0113)
-#define AT86RF215_REG__RF09_PAC                                 (0x0114)
+#define AT86RF215_REG__TXCUTC                                   (0x0012)
+#define AT86RF215_REG__TXDFE                                    (0x0013)
+#define AT86RF215_REG__PAC                                      (0x0014)
 
 /****** BBC ***************************************/
 
@@ -102,7 +102,7 @@ extern "C" {
 #define AT86RF215_REG__BBC0_FSKC3                               (0x0363)
 #define AT86RF215_REG__BBC0_FSKPLL                              (0x0365)
 #define AT86RF215_REG__BBC0_FSKPHRTX                            (0x036A)
-#define AT86RF215_REG__BBC0_FSKDM                               (0x0372)
+#define AT86RF215_REG__FSKDM                                    (0x0072)
 
 /*** PMU ***/
 #define AT86RF215_REG__BBC0_PMUC                                (0x0380)

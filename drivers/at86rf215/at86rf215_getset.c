@@ -111,7 +111,7 @@ void at86rf215_set_page(at86rf2xx_t *dev, uint8_t page)
 
 int16_t at86rf215_get_txpower(const at86rf2xx_t *dev)
 {
-    uint8_t txpower = at86rf215_reg_read(dev, AT86RF215_REG__RF09_PAC)
+    uint8_t txpower = at86rf215_reg_read(dev, dev->rf|AT86RF215_REG__PAC)
                       & AT86RF215_RFn_TX_PWR_MASK;
 	/* FSK: offset from -11 dBm */
     return (txpower - 11);
@@ -128,7 +128,7 @@ void at86rf215_set_txpower(const at86rf2xx_t *dev, int16_t txpower)
     }
 
 	/* use default (max) */
-    at86rf215_reg_write(dev, AT86RF215_REG__RF09_PAC, 0x7f);
+    at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__PAC, 0x7f);
 }
 
 uint8_t at86rf2xx_get_max_retries(const at86rf2xx_t *dev)
@@ -307,21 +307,21 @@ void at86rf215_set_tx_frontend(at86rf2xx_t *dev)
 
 	/*** digital frontend ***/
 	/* RCUT | DM: Direct Modulation | SR: TX Sample Rate */
-	tmp = at86rf215_reg_read(dev, AT86RF215_REG__RF09_TXDFE);
+	tmp = at86rf215_reg_read(dev, dev->rf|AT86RF215_REG__TXDFE);
 	tmp = 0;
 	tmp = (0x4 << 5) | (0x1 << 4) | (0x1);
-	at86rf215_reg_write(dev, AT86RF215_REG__RF09_TXDFE, tmp);
+	at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__TXDFE, tmp);
 
 	/* [FSK] Direct Modulation */
 	tmp = 0x1;
-	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_FSKDM, tmp);
+	at86rf215_reg_write(dev, dev->bbc|AT86RF215_REG__FSKDM, tmp);
 
 	/*** analog frontend ***/
 	/* PARAMP | - | LPFCUT */
-	tmp = at86rf215_reg_read(dev, AT86RF215_REG__RF09_TXCUTC);
+	tmp = at86rf215_reg_read(dev, dev->rf|AT86RF215_REG__TXCUTC);
 	tmp = 0;
 	tmp = (0x1 << 6) | (0x9);
-	at86rf215_reg_write(dev, AT86RF215_REG__RF09_TXCUTC, tmp);
+	at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__TXCUTC, tmp);
 }
 
 void at86rf215_set_rx_frontend(at86rf2xx_t *dev)
@@ -330,27 +330,27 @@ void at86rf215_set_rx_frontend(at86rf2xx_t *dev)
 
 	/*** analog frontend ***/
 	tmp = (0x1 << 4) | (0x8); // 0x7: 800 kHz.
-	at86rf215_reg_write(dev, AT86RF215_REG__RF09_RXBWC, tmp);
+	at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__RXBWC, tmp);
 
 	/*** digital frontend ***/
 	/* RCUT | - | SR: RX Sample Rate */
-	tmp = at86rf215_reg_read(dev, AT86RF215_REG__RF09_RXDFE);
+	tmp = at86rf215_reg_read(dev, dev->rf|AT86RF215_REG__RXDFE);
 	tmp = 0;
 	tmp = (0x1 << 5) | (0x2);
-	at86rf215_reg_write(dev, AT86RF215_REG__RF09_RXDFE, tmp);
+	at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__RXDFE, tmp);
 
 	/*** AGC ***/
 	tmp = 0x0; // 0x1: enable.
-	at86rf215_reg_write(dev, AT86RF215_REG__RF09_AGCC, tmp);
+	at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__AGCC, tmp);
 	/* target level */
-	tmp = at86rf215_reg_read(dev, AT86RF215_REG__RF09_AGCS);
+	tmp = at86rf215_reg_read(dev, dev->rf|AT86RF215_REG__AGCS);
 	tmp &= ~(AT86RF215_RFn_AGC_TGT_M);
 	tmp |= (0x1 << 5);
-	at86rf215_reg_write(dev, AT86RF215_REG__RF09_AGCS, tmp);
+	at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__AGCS, tmp);
 
 	/*** EDC ***/
 	tmp = 0x3; // 0x3: disable.
-	at86rf215_reg_write(dev, AT86RF215_REG__RF09_EDC, tmp);
+	at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__EDC, tmp);
 }
 
 void at86rf215_set_bbc(at86rf2xx_t *dev)

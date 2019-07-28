@@ -170,10 +170,10 @@ static void backup_registers(void)
 	preState = at86rf215_set_state(pDev, AT86RF215_STATE_RF_TRXOFF);
 
 	/*** Frequency ***/
-	rfCS = at86rf215_reg_read(pDev, AT86RF215_REG__RF09_CS);
-	rfCCF0L = at86rf215_reg_read(pDev, AT86RF215_REG__RF09_CCF0L);
-	rfCCF0H = at86rf215_reg_read(pDev, AT86RF215_REG__RF09_CCF0H);
-	rfCNL = at86rf215_reg_read(pDev, AT86RF215_REG__RF09_CNL);
+	rfCS = at86rf215_reg_read(pDev, pDev->rf|AT86RF215_REG__CS);
+	rfCCF0L = at86rf215_reg_read(pDev, pDev->rf|AT86RF215_REG__CCF0L);
+	rfCCF0H = at86rf215_reg_read(pDev, pDev->rf|AT86RF215_REG__CCF0H);
+	rfCNL = at86rf215_reg_read(pDev, pDev->rf|AT86RF215_REG__CNL);
 
 	/*** Interrupt ***/
 	bbcIRQ = at86rf215_reg_read(pDev, AT86RF215_REG__BBC0_IRQM);
@@ -184,12 +184,12 @@ static void restore_registers(void)
 //	at86rf215_set_state(pDev, AT86RF215_STATE_RF_TRXOFF);
 //
 //	/*** Frequency ***/
-//	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CS, rfCS);
-//	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CCF0L, rfCCF0L);
-//	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CCF0H, rfCCF0H);
-//	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CNL, rfCNL);
+//	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CS, rfCS);
+//	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CCF0L, rfCCF0L);
+//	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CCF0H, rfCCF0H);
+//	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CNL, rfCNL);
 //	/* channel scheme */
-//	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CNM, 0);
+//	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CNM, 0);
 //
 //	/*** Interrupt ***/
 //	at86rf215_reg_read(pDev, AT86RF215_REG__BBC0_IRQS);
@@ -231,9 +231,9 @@ static void setFrequency(uint16_t f, uint8_t offset)
 //	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CS, rfCS);
 //	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CCF0L, rfCCF0L);
 //	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CCF0H, rfCCF0H);
-	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CNL, f);
+	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CNL, f);
 	/* channel scheme */
-	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CNM, 0);
+	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CNM, 0);
 }
 
 static void sender_pmu(void)
