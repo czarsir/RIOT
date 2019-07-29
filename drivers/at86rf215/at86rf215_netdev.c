@@ -88,7 +88,9 @@ static int _init(netdev_t *netdev)
     at86rf215_reset(dev);
 
 	/*** ISR ***/
-	gpio_init_int(dev->params.int_pin, GPIO_IN, GPIO_RISING, _irq_handler, dev);
+	if(dev->rf == _RF24_) {
+		gpio_init_int(dev->params.int_pin, GPIO_IN, GPIO_RISING, _irq_handler, dev);
+	}
 
     /* test if the SPI is set up correctly and the device is responding */
     if (at86rf215_reg_read(dev, AT86RF215_REG__PART_NUM) != AT86RF2XX_PARTNUM) {
