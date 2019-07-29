@@ -206,8 +206,8 @@ int at86rf215_receive(at86rf2xx_t *dev, void *buf, size_t len)
 	uint8_t tmpL;
 
 	/*** get size ***/
-	tmpH = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_RXFLH);
-	tmpL = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_RXFLL);
+	tmpH = at86rf215_reg_read(dev, dev->bbc|AT86RF215_REG__RXFLH);
+	tmpL = at86rf215_reg_read(dev, dev->bbc|AT86RF215_REG__RXFLL);
 	/* substract length of FCS field */
 	pkt_len = (((tmpH & 0x07)<<8) | tmpL) - 2;
 	/* not enough space in buf */
@@ -259,8 +259,8 @@ void at86rf215_tx_exec(const at86rf2xx_t *dev)
 	uint8_t tmp;
 
     /* set frame length */
-	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_TXFLH, 0);
-	at86rf215_reg_write(dev, AT86RF215_REG__BBC0_TXFLL, dev->tx_frame_len);
+	at86rf215_reg_write(dev, dev->bbc|AT86RF215_REG__TXFLH, 0);
+	at86rf215_reg_write(dev, dev->bbc|AT86RF215_REG__TXFLL, dev->tx_frame_len);
 
     /* trigger sending of pre-loaded frame */
 	//DEBUG("[rf215] -- tx_exec : set state (TXPREP)\n");

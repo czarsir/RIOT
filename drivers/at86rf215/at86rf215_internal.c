@@ -52,7 +52,12 @@ uint8_t at86rf215_reg_read(const at86rf2xx_t *dev, uint16_t addr)
 void at86rf215_txfb_write(const at86rf2xx_t *dev, uint8_t offset,
                           const uint8_t *data, size_t len)
 {
-	uint16_t cmd = (AT86RF215_ACCESS_WRITE | (AT86RF215_REG__BBC0_FBTXS + offset));
+	uint16_t cmd = AT86RF215_ACCESS_WRITE;
+	if(dev->rf == _RF24_) {
+		cmd |= (AT86RF215_REG__BBC1_FBTXS + offset);
+	} else {
+		cmd |= (AT86RF215_REG__BBC0_FBTXS + offset);
+	}
 
 	getbus(dev);
 	spi_transfer_byte(SPIDEV, CSPIN, true, (uint8_t)(cmd>>8));
@@ -63,7 +68,12 @@ void at86rf215_txfb_write(const at86rf2xx_t *dev, uint8_t offset,
 
 void at86rf215_rxfb_start(const at86rf2xx_t *dev)
 {
-	uint16_t cmd = (AT86RF215_ACCESS_READ | AT86RF215_REG__BBC0_FBRXS);
+	uint16_t cmd = AT86RF215_ACCESS_READ;
+	if(dev->rf == _RF24_) {
+		cmd |= AT86RF215_REG__BBC1_FBRXS;
+	} else {
+		cmd |= AT86RF215_REG__BBC0_FBRXS;
+	}
 
     getbus(dev);
 	spi_transfer_byte(SPIDEV, CSPIN, true, (uint8_t)(cmd>>8));

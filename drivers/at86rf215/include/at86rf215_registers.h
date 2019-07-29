@@ -78,11 +78,11 @@ extern "C" {
 #define AT86RF215_REG__IRQM                                     (0x0000)
 #define AT86RF215_REG__PC                                       (0x0001)
 /* RX Frame */
-#define AT86RF215_REG__BBC0_RXFLL                               (0x0304)
-#define AT86RF215_REG__BBC0_RXFLH                               (0x0305)
+#define AT86RF215_REG__RXFLL                                    (0x0004)
+#define AT86RF215_REG__RXFLH                                    (0x0005)
 /* TX Frame */
-#define AT86RF215_REG__BBC0_TXFLL                               (0x0306)
-#define AT86RF215_REG__BBC0_TXFLH                               (0x0307)
+#define AT86RF215_REG__TXFLL                                    (0x0006)
+#define AT86RF215_REG__TXFLH                                    (0x0007)
 
 /*** Filter ***/
 #define AT86RF215_REG__AFC0                                     (0x0020)
@@ -96,7 +96,7 @@ extern "C" {
 #define AT86RF215_REG__IEEE_MACSHA0_1                           (0x0030)
 
 /* Auto Mode */
-#define AT86RF215_REG__BBC0_AMCS                                (0x0340)
+#define AT86RF215_REG__AMCS                                     (0x0040)
 
 /****** FSK ******/
 #define AT86RF215_REG__FSKC0                                    (0x0060)
@@ -108,13 +108,17 @@ extern "C" {
 #define AT86RF215_REG__FSKDM                                    (0x0072)
 
 /*** PMU ***/
-#define AT86RF215_REG__BBC0_PMUC                                (0x0380)
-#define AT86RF215_REG__BBC0_PMUVAL                              (0x0381)
+#define AT86RF215_REG__PMUC                                     (0x0080)
+#define AT86RF215_REG__PMUVAL                                   (0x0081)
 
 /* RX Frame Buffer */
 #define AT86RF215_REG__BBC0_FBRXS                               (0x2000)
 /* TX Frame Buffer */
 #define AT86RF215_REG__BBC0_FBTXS                               (0x2800)
+/* RX Frame Buffer */
+#define AT86RF215_REG__BBC1_FBRXS                               (0x3000)
+/* TX Frame Buffer */
+#define AT86RF215_REG__BBC1_FBTXS                               (0x3800)
 
 
 

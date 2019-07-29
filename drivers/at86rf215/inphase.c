@@ -249,7 +249,7 @@ static void receiver_pmu(uint8_t* pmu_value)
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_RX);
 	xtimer_usleep(45); // wait for sender to be ready
 
-	*pmu_value = at86rf215_reg_read(pDev, AT86RF215_REG__BBC0_PMUVAL);
+	*pmu_value = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PMUVAL);
 }
 
 static void pmu_magic_mode_classic(pmu_magic_role_t role)
@@ -436,7 +436,7 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 
 	// TODO ding
 	/*** PMU ***/
-	at86rf215_reg_write(pDev, AT86RF215_REG__BBC0_PMUC, 0x1f);  // PUM enable
+	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0x1f);  // PUM enable
 
 	wait_for_timer(1);
 
@@ -445,8 +445,8 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 	uint8_t fb_data[BUFF_LEN] = {0};
 	//PRINTF("[inphase] fb_data: 0x%x, 0x%x, 0x%x\n", fb_data[2], fb_data[5], fb_data[7]);
 	at86rf215_txfb_write(pDev, 0, fb_data, BUFF_LEN);
-	at86rf215_reg_write(pDev, AT86RF215_REG__BBC0_TXFLH, 0);
-	at86rf215_reg_write(pDev, AT86RF215_REG__BBC0_TXFLL, BUFF_LEN + 2);
+	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__TXFLH, 0);
+	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__TXFLL, BUFF_LEN + 2);
 	/* antenna diversity control is skipped, we only have one antenna */
 
 	//wait_for_timer(2);

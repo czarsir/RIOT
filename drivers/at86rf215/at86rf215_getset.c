@@ -275,10 +275,10 @@ void at86rf2xx_set_option(at86rf2xx_t *dev, uint16_t option, bool state)
         case AT86RF215_OPT_AUTOACK:
             DEBUG("[rf215] opt: %s auto ACKs\n",
                   (state ? "enable" : "disable"));
-            tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_AMCS);
+            tmp = at86rf215_reg_read(dev, dev->bbc|AT86RF215_REG__AMCS);
             tmp = (state) ? (tmp |  AT86RF215_AACK_ENABLE)
                           : (tmp & ~AT86RF215_AACK_ENABLE);
-            at86rf215_reg_write(dev, AT86RF215_REG__BBC0_AMCS, tmp);
+            at86rf215_reg_write(dev, dev->bbc|AT86RF215_REG__AMCS, tmp);
             break;
         case AT86RF2XX_OPT_TELL_RX_START:
             DEBUG("[at86rf2xx] opt: %s SFD IRQ\n",

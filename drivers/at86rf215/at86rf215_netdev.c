@@ -154,8 +154,8 @@ static int _recv(netdev_t *netdev, void *buf, size_t len, void *info)
 	//DEBUG("[rf215] recv \n");
 
 	/*** get size ***/
-	tmpH = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_RXFLH);
-	tmpL = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_RXFLL);
+	tmpH = at86rf215_reg_read(dev, dev->bbc|AT86RF215_REG__RXFLH);
+	tmpL = at86rf215_reg_read(dev, dev->bbc|AT86RF215_REG__RXFLL);
 	/* substract length of FCS field */
 	pkt_len = (((tmpH & 0x07)<<8) | tmpL) - 2;
 
@@ -190,7 +190,7 @@ static int _recv(netdev_t *netdev, void *buf, size_t len, void *info)
         at86rf215_rxfb_read(dev, &(radio_info->lqi), 1);
         at86rf215_rxfb_stop(dev);
 		// TODO
-        rssi = at86rf215_reg_read(dev, AT86RF2XX_REG__PHY_ED_LEVEL);
+        //rssi = at86rf215_reg_read(dev, AT86RF2XX_REG__PHY_ED_LEVEL);
         radio_info->rssi = RSSI_BASE_VAL + rssi;
     }
     else {
@@ -402,7 +402,7 @@ static int _get(netdev_t *netdev, netopt_t opt, void *val, size_t max_len)
 
         case NETOPT_AUTOACK:
             assert(max_len >= sizeof(netopt_enable_t));
-            tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_AMCS);
+            tmp = at86rf215_reg_read(dev, dev->bbc|AT86RF215_REG__AMCS);
             *((netopt_enable_t *)val) = (tmp & AT86RF215_AACK_ENABLE) ? true : false;
             res = sizeof(netopt_enable_t);
             break;
@@ -614,7 +614,11 @@ static void _isr(netdev_t *netdev)
     }
 
     /* read (consume) device status */
-	irq_mask = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_IRQS);
+	if(dev->rf == _RF24_) {
+		irq_mask = at86rf215_reg_read(dev, AT86RF215_REG__BBC1_IRQS);
+	} else {
+		irq_mask = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_IRQS);
+	}
 
 //    trac_status = at86rf215_reg_read(dev, AT86RF215_REG__RF09_CMD)
 //                  & AT86RF2XX_TRX_STATE_MASK__TRAC;
