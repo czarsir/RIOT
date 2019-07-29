@@ -379,7 +379,9 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 	at86rf215_reg_read(pDev, AT86RF215_REG__BBC0_IRQS);
 
 	if (role == PMU_MAGIC_ROLE_REFLECTOR) {
-		xtimer_usleep(9.5243);	// DIG2 signal is on average 9.5243 us delayed on the initiator, reflector waits
+		//xtimer_usleep(9.5243);	// DIG2 signal is on average 9.5243 us delayed on the initiator, reflector waits
+	} else {
+		xtimer_usleep(1470);
 	}
 
 	/****** Sync (done) ******/
