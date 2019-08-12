@@ -228,9 +228,11 @@ static void setFrequency(uint16_t f, uint8_t offset)
 	at86rf215_set_state(pDev, AT86RF215_STATE_RF_TRXOFF);
 
 	/*** Channel ***/
-//	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CS, rfCS);
-//	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CCF0L, rfCCF0L);
-//	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CCF0H, rfCCF0H);
+	/* 0x14 for 2.4G (Scheme 0) */
+//	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CS, 0x14);
+	/* 0x8ca0 for 2.4G (Scheme 0) */
+//	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CCF0L, 0xa0);
+//	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CCF0H, 0x8c);
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CNL, f);
 	/* channel scheme */
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CNM, 0);
