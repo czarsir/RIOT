@@ -65,7 +65,7 @@ void at86rf215_set_pan(at86rf2xx_t *dev, uint16_t pan)
 	le_uint16_t le_pan = byteorder_btols(byteorder_htons(pan));
 
 	dev->netdev.pan = pan;
-	DEBUG("[rf215] pan0: %u, pan1: %u\n", le_pan.u8[0], le_pan.u8[1]);
+	//DEBUG("[rf215] pan0: %u, pan1: %u\n", le_pan.u8[0], le_pan.u8[1]);
 	at86rf215_reg_write(dev, dev->bbc|AT86RF215_REG__IEEE_MACPID0_0, le_pan.u8[0]);
 	at86rf215_reg_write(dev, dev->bbc|AT86RF215_REG__IEEE_MACPID0_1, le_pan.u8[1]);
 }

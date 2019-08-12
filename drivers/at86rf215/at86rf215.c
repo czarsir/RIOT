@@ -58,6 +58,8 @@ void at86rf215_setup(at86rf2xx_t *dev, at86rf2xx_t *dev1, const at86rf215_params
 
 	/*** hardware reset ***/
 	//at86rf215_hardware_reset(dev);
+	at86rf215_set_state(dev, AT86RF215_STATE_RF_TRXOFF);
+	at86rf215_set_state(dev1, AT86RF215_STATE_RF_TRXOFF);
 
 	/* Info */
 	uint8_t temp = at86rf215_reg_read(dev, AT86RF215_REG__PART_NUM);
@@ -165,8 +167,8 @@ void at86rf215_reset(at86rf2xx_t *dev)
 	at86rf215_reg_read(dev, AT86RF215_REG__RF24_IRQS);
 
 	/********* State Machine *********/
-	DEBUG("[rf215] -- reset : set state (TODO: stay TRXOFF)\n");
-    /* go into RX state ? or TXPREP ? or stay TRXOFF ? */
+	//DEBUG("[rf215] -- reset : set state\n");
+    /* TODO: go into RX state ? or TXPREP ? or stay TRXOFF ? */
     //at86rf215_set_state(dev, AT86RF2XX_STATE_RX_AACK_ON);
 
     DEBUG("[rf215] -- reset : complete.\n");
