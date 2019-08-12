@@ -80,6 +80,8 @@ void at86rf215_reset(at86rf2xx_t *dev)
 	uint8_t tmp;
 
 	DEBUG("[rf215] -- reset\n");
+	at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_RESET);
+	//at86rf215_set_state(dev, AT86RF215_STATE_RF_TRXOFF);
 
 	DEBUG("[rf215] -- reset : ieee reset\n");
     netdev_ieee802154_reset(&dev->netdev);
@@ -165,6 +167,7 @@ void at86rf215_reset(at86rf2xx_t *dev)
 	at86rf215_reg_read(dev, AT86RF215_REG__RF09_IRQS);
 	at86rf215_reg_read(dev, AT86RF215_REG__BBC0_IRQS);
 	at86rf215_reg_read(dev, AT86RF215_REG__RF24_IRQS);
+	at86rf215_reg_read(dev, AT86RF215_REG__BBC1_IRQS);
 
 	/********* State Machine *********/
 	//DEBUG("[rf215] -- reset : set state\n");

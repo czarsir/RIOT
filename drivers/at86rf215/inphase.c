@@ -229,10 +229,10 @@ static void setFrequency(uint16_t f, uint8_t offset)
 
 	/*** Channel ***/
 	/* 0x14 for 2.4G (Scheme 0) */
-//	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CS, 0x14);
+	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CS, 0x14);
 	/* 0x8ca0 for 2.4G (Scheme 0) */
-//	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CCF0L, 0xa0);
-//	at86rf215_reg_write(pDev, AT86RF215_REG__RF09_CCF0H, 0x8c);
+	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CCF0L, 0xa0);
+	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CCF0H, 0x8c);
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CNL, f);
 	/* channel scheme */
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CNM, 0);
@@ -739,7 +739,7 @@ void inphase_receive(const uint16_t *src, uint16_t msg_len, void *msg)
 	frame_range_basic_t *frame_basic = msg;
 	uint8_t msg_accepted = 0;
 
-	PRINTF("[inphase] inphase_receive: message received! 0x%x\n", frame_basic->frame_type);
+	PRINTF("[inphase] inphase_receive: 0x%x\n", frame_basic->frame_type);
 
 	switch (frame_basic->frame_type) {
 		case RANGE_REQUEST:
