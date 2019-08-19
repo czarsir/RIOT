@@ -55,6 +55,12 @@ extern "C" {
 #define DISTANCE_VALUE_ERROR  8  // synced to wrong frame (not the one send by reflector)
 #define DISTANCE_WRONG_SYNC   9
 
+/*** special symbols for serial output ***/
+#define BINARY_FRAME_START     0x3C		// this byte marks a new frame
+#define BINARY_FRAME_END       0x3E		// this byte marks the end of a frame
+#define BINARY_ESCAPE_BYTE     0x40		// this byte shows that the next byte's value will be changed
+#define BINARY_ESCAPE_ADD      0x10		// this is the amount the next byte is changed
+
 
 /********* Type Definition *********/
 

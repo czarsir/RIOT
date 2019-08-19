@@ -7,6 +7,7 @@
 /*** Base ***/
 #include <string.h>
 #include <xtimer.h>
+#include "periph/uart.h"
 
 /*** Driver ***/
 #include "at86rf215.h"
@@ -122,6 +123,110 @@ static void send_result_confirm(uint16_t start_address, uint16_t result_length)
 	memcpy(&f.content.result_confirm.result_data, &local_pmu_values[start_address], result_length);
 	conn.send(settings.initiator, result_length+5, &f);
 }
+
+/********* Output *********/
+
+static uint8_t bufByte;
+
+static void rs232_send(uint8_t data)
+{
+	bufByte = data;
+	uart_write(UART_DEV(0), (const uint8_t *)&bufByte, (size_t)1);
+}
+
+static void send_escaped(uint8_t data)
+{
+	switch(data) {
+		case BINARY_FRAME_START:
+		case BINARY_FRAME_END:
+		case BINARY_ESCAPE_BYTE:
+			rs232_send(BINARY_ESCAPE_BYTE);
+			data -= BINARY_ESCAPE_ADD;
+			// no break here
+		default:
+			rs232_send(data);
+			break;
+	}
+}
+
+void binary_start_frame(void)
+{
+	rs232_send(BINARY_FRAME_START);
+}
+
+void binary_end_frame(void)
+{
+	rs232_send(BINARY_FRAME_END);
+}
+
+void binary_send_byte(uint8_t data)
+{
+	send_escaped(data);
+}
+
+void binary_send_short(uint16_t data)
+{
+	send_escaped((data >> 8) & 0xFF);
+	send_escaped(data & 0xFF);
+}
+
+void binary_send_data(uint8_t* data, uint8_t length)
+{
+	uint8_t i;
+	for (i = 0; i < length; i++) {
+		send_escaped(data[i]);
+	}
+}
+
+void binary_send_frame(uint8_t* frame, uint8_t length)
+{
+	binary_start_frame();
+	binary_send_data(frame, length);
+	binary_end_frame();
+}
+
+static void send_serial(void)
+{
+	binary_start_frame();
+
+	// send number of samples per frequency
+	binary_send_byte(1); // only one sample is transmitted it is already averaged
+
+	// send step size
+	binary_send_byte(0); // 0 is parsed as 500 kHz
+
+	// send start frequency
+	//binary_send_short(PMU_START_FREQUENCY);
+	binary_send_short(2400);
+
+	// send total amount of samples
+	binary_send_short(PMU_MEASUREMENTS);
+
+	// send reflector address
+	binary_send_short(settings.reflector);
+
+	// send calculated distance meter
+	//binary_send_byte(dist_last_meter);
+	binary_send_byte(0);
+
+	// send calculated distance centimeter
+	//binary_send_byte(dist_last_centimeter);
+	binary_send_byte(0);
+
+	// send last quality
+	//binary_send_byte(dist_last_quality);
+	binary_send_byte(0);
+
+	// send system status
+	binary_send_byte(status_code);
+
+	// transmit data
+	binary_send_data(local_pmu_values, PMU_MEASUREMENTS);
+
+	binary_end_frame();
+}
+
+/********* Data *********/
 
 static void active_reflector_subtract(uint16_t last_start,
 									  uint8_t *result_data, uint16_t result_length)
@@ -633,10 +738,11 @@ void statemachine(uint8_t frame_type, frame_subframe_t *frame)
 					fsm_state = IDLE;
 					DEBUG("[inphase] done.\n");
 					DEBUG("[inphase] PMU:");
-					for(int i=0; i<PMU_MEASUREMENTS; i++) {
-						DEBUG(" %d", signed_local_pmu_values[i]);
-					}
+//					for(int i=0; i<PMU_MEASUREMENTS; i++) {
+//						DEBUG(" %d", signed_local_pmu_values[i]);
+//					}
 					DEBUG("\n");
+					send_serial();
 				}
 			} else {
 				/* all other frames are invalid here */
