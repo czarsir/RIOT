@@ -14,7 +14,7 @@
 #include "at86rf215_internal.h"
 #include "at86rf215_netdev.h"
 
-#define ENABLE_DEBUG (1)
+#define ENABLE_DEBUG (0)
 #include "debug.h"
 
 /****** Functions ******/

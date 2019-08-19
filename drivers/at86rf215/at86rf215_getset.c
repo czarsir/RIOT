@@ -9,7 +9,7 @@
 #include "at86rf215_registers.h"
 #include "periph/spi.h"
 
-#define ENABLE_DEBUG (1)
+#define ENABLE_DEBUG (0)
 #include "debug.h"
 
 

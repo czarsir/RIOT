@@ -18,7 +18,7 @@
 /*** Self ***/
 #include "inphase.h"
 
-#define ENABLE_DEBUG (1)
+#define ENABLE_DEBUG (0)
 #include "debug.h"
 #define PRINTF DEBUG
 
@@ -187,6 +187,7 @@ void binary_send_frame(uint8_t* frame, uint8_t length)
 
 static void send_serial(void)
 {
+	puts("serial:start\n");
 	binary_start_frame();
 
 	// send number of samples per frequency
@@ -224,6 +225,7 @@ static void send_serial(void)
 	binary_send_data(local_pmu_values, PMU_MEASUREMENTS);
 
 	binary_end_frame();
+	puts("serial:end\n");
 }
 
 /********* Data *********/
@@ -693,6 +695,7 @@ void statemachine(uint8_t frame_type, frame_subframe_t *frame)
 					xtimer_sleep(1);
 					next_result_start = 0;
 					send_result_request(next_result_start);
+					DEBUG("[inphase] send %u\n", next_result_start);
 					retransmissions = RESULT_REQUEST_RETRANSMISSIONS; // maximum allowed retransmissions
 					//ctimer_set(&timeout_timer, REQUEST_TIMEOUT, trigger_network_timeout, NULL);
 					fsm_state = RESULT_REQUESTED;
@@ -790,7 +793,7 @@ void statemachine(uint8_t frame_type, frame_subframe_t *frame)
 						// start address points outside of the pmu data, this indicates that the initiator does not need more data
 						fsm_state = IDLE;
 						status_code = DISTANCE_IDLE;
-						DEBUG("[inphase] done.\n");
+						DEBUG("[inphase] done. %u\n", start_address);
 					} else {
 						// initiator still needs results
 						uint8_t result_length;

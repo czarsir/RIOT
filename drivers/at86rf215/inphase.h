@@ -41,7 +41,7 @@ extern "C" {
 //#define PMU_START_FREQUENCY   2400  // start frequency for measurement
 #define PMU_START_FREQUENCY   0
 //#define PMU_MEASUREMENTS      200   // number of frequencies to measure
-#define PMU_MEASUREMENTS      10
+#define PMU_MEASUREMENTS      100
 
 /*** Status codes (for SENSORS_READY) ***/
 #define DISTANCE_INVALID      0  // no measurement running, idle, ready for measurement

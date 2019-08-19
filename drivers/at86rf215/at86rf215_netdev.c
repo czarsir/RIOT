@@ -23,7 +23,7 @@
 #include "at86rf215_internal.h"
 #include "at86rf215_registers.h"
 
-#define ENABLE_DEBUG (1)
+#define ENABLE_DEBUG (0)
 #include "debug.h"
 
 #define _MAX_MHR_OVERHEAD   (25)
@@ -50,7 +50,7 @@ static void _irq_handler(void *arg)
 	//at86rf2xx_t *dd = (at86rf2xx_t *) arg;
 
 	/* use puts() instead of DEBUG(). stack too small */
-	puts("[rf215] irq_handler\n");
+	//puts("[rf215] irq_handler\n");
 
 	/*** test ***/
 //	uint8_t tmp = at86rf215_reg_read(dd, AT86RF215_REG__BBC0_IRQS);
