@@ -55,6 +55,7 @@ void at86rf215_setup(at86rf2xx_t *dev, at86rf2xx_t *dev1, const at86rf215_params
 	gpio_set(dev->params.reset_pin);
 	/*** test ***/
 	//gpio_init(GPIO_PIN(PORT_B, 9), GPIO_OUT);
+	//gpio_clear(GPIO_PIN(PORT_B, 9));
 
 	/*** hardware reset ***/
 	//at86rf215_hardware_reset(dev);

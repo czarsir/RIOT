@@ -53,7 +53,13 @@ static void _irq_handler(void *arg)
 	//puts("[rf215] irq_handler\n");
 
 	/*** test ***/
-//	uint8_t tmp = at86rf215_reg_read(dd, AT86RF215_REG__BBC0_IRQS);
+	if(sigSync_test == 1) {
+		puts("[rf215] sigSync_test\n");
+		at86rf215_reg_read((at86rf2xx_t *)arg, AT86RF215_REG__BBC1_IRQS);
+		gpio_clear(GPIO_PIN(PORT_B, 9));
+		return;
+	}
+//	uint8_t tmp = at86rf215_reg_read((at86rf2xx_t *)arg, AT86RF215_REG__BBC1_IRQS);
 //	if(tmp & AT86RF215_BBCn_IRQS__RXFS_M) {
 //		puts("[rf215] irq_handler : Rx start.\n");
 //	} else {

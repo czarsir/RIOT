@@ -14,6 +14,7 @@ extern "C" {
 
 /********* Variables *********/
 extern volatile uint8_t sigSync;
+extern volatile uint8_t sigSync_test;
 
 /********* Functions *********/
 extern void inphase_start(at86rf2xx_t *dev);

@@ -18,7 +18,7 @@
 /*** Self ***/
 #include "inphase.h"
 
-#define ENABLE_DEBUG (0)
+#define ENABLE_DEBUG (1)
 #include "debug.h"
 #define PRINTF DEBUG
 
@@ -37,6 +37,7 @@ static uint8_t next_result_start;
 
 /*** Sync ***/
 volatile uint8_t sigSync;
+volatile uint8_t sigSync_test = 0;
 
 /*** Buffer ***/
 uint8_t fbRx[FRAME_BUFFER_LENGTH];
@@ -440,6 +441,7 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 			break;
 	}
 	at86rf215_reg_read(pDev, AT86RF215_REG__BBC0_IRQS);
+	at86rf215_reg_read(pDev, AT86RF215_REG__BBC1_IRQS);
 	sigSync = 1;
 
 	/*** Frequency ***/
@@ -486,6 +488,9 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 	}
 	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__IRQM, 0);
 	at86rf215_reg_read(pDev, AT86RF215_REG__BBC0_IRQS);
+	at86rf215_reg_read(pDev, AT86RF215_REG__BBC1_IRQS);
+	/*** test ***/
+	//sigSync_test = 1;
 
 	if (role == PMU_MAGIC_ROLE_REFLECTOR) {
 		//xtimer_usleep(9.5243);	// DIG2 signal is on average 9.5243 us delayed on the initiator, reflector waits
@@ -605,6 +610,8 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 			break;
 	}
 	ret_val = 0;
+	/*** test ***/
+	sigSync_test = 0;
 
 BAIL:
 
