@@ -350,14 +350,14 @@ static void sender_pmu(void)
 {
 	at86rf215_reg_write(pDev,  pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TXPREP);
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TX);
-	xtimer_usleep(85);	// wait for receiver to measure
+	xtimer_usleep(385);	// wait for receiver to measure
 }
 
 static void receiver_pmu(uint8_t* pmu_value)
 {
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TXPREP);
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_RX);
-	xtimer_usleep(45); // wait for sender to be ready
+	xtimer_usleep(345); // wait for sender to be ready
 
 	*pmu_value = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PMUVAL);
 }
@@ -452,6 +452,8 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 
 	/* Initiator */
 	at86rf215_set_state(pDev, AT86RF215_STATE_RF_RX);
+
+	gpio_set(GPIO_PIN(PORT_B, 9));
 
 	/* reflector sends the synchronization frame */
 	if (role == PMU_MAGIC_ROLE_REFLECTOR) {
