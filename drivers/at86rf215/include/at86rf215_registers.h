@@ -185,6 +185,7 @@ extern "C" {
 #define AT86RF215_RFn_DRV_MASK                                  (0x03)
 #define AT86RF215_RFn_TX_PWR_MASK                               (0x1F)
 #define AT86RF215_RFn_AGC_TGT_M                                 (0xE0)
+#define AT86RF215_RFn_IRQM__TRXRDY_M                            (0x02)
 /*** BBC ***/
 #define AT86RF215_BBCn_IRQS__TXFE_M                             (0x10)
 #define AT86RF215_BBCn_IRQS__RXFE_M                             (0x02)

@@ -350,14 +350,16 @@ static void sender_pmu(void)
 {
 	at86rf215_reg_write(pDev,  pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TXPREP);
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TX);
-	xtimer_usleep(385);	// wait for receiver to measure
+	/*** wait for receiver to measure ***/
+	xtimer_usleep(450);
 }
 
 static void receiver_pmu(uint8_t* pmu_value)
 {
-	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TXPREP);
+	//at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TXPREP);
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_RX);
-	xtimer_usleep(345); // wait for sender to be ready
+	/*** wait for sender to be ready ***/
+	xtimer_usleep(400); // tx_delay + PHR = 297, extra = 50.
 
 	*pmu_value = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PMUVAL);
 }
@@ -368,6 +370,7 @@ static void pmu_magic_mode_classic(pmu_magic_role_t role)
 	for (i=0; i < PMU_MEASUREMENTS; i++) {
 		// use 500 kHz spacing
 //		uint8_t f, f_full, f_half;
+		gpio_set(GPIO_PIN(PORT_B, 9));
 		switch (role) {
 			case PMU_MAGIC_ROLE_INITIATOR:		// initiator
 //				f = i;
@@ -450,10 +453,10 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 
 	/****** Sync ******/
 
+	gpio_set(GPIO_PIN(PORT_B, 9));
+
 	/* Initiator */
 	at86rf215_set_state(pDev, AT86RF215_STATE_RF_RX);
-
-	gpio_set(GPIO_PIN(PORT_B, 9));
 
 	/* reflector sends the synchronization frame */
 	if (role == PMU_MAGIC_ROLE_REFLECTOR) {
@@ -488,11 +491,15 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 		ret_val = -1; // DIG2 signal not seen, abort!
 		goto BAIL;
 	}
+	at86rf215_set_state(pDev, AT86RF215_STATE_RF_TRXOFF);
 	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__IRQM, 0);
 	at86rf215_reg_read(pDev, AT86RF215_REG__BBC0_IRQS);
 	at86rf215_reg_read(pDev, AT86RF215_REG__BBC1_IRQS);
 	/*** test ***/
-	//sigSync_test = 1;
+	sigSync_test = 1;
+	if(role == PMU_MAGIC_ROLE_INITIATOR) {
+		at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__IRQM, AT86RF215_BBCn_IRQM__RXFS_M);
+	}
 
 	if (role == PMU_MAGIC_ROLE_REFLECTOR) {
 		//xtimer_usleep(9.5243);	// DIG2 signal is on average 9.5243 us delayed on the initiator, reflector waits
@@ -554,11 +561,13 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 
 	// TODO ding
 	/*** PMU ***/
-	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0x1f);  // PUM enable
+	/* CCFTS 0 | IQSEL 1 | FED 0 | SYNC 111 | AVG 0 | EN 1 */
+	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0x5d);  // PUM enable
+//	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0x01);  // PUM enable
 
 	wait_for_timer(1);
 
-#define BUFF_LEN 127
+#define BUFF_LEN 12
 	/*** write 0 to buffer ***/
 	uint8_t fb_data[BUFF_LEN] = {0};
 	//PRINTF("[inphase] fb_data: 0x%x, 0x%x, 0x%x\n", fb_data[2], fb_data[5], fb_data[7]);
@@ -857,7 +866,7 @@ void inphase_receive(const uint16_t *src, uint16_t msg_len, void *msg)
 	frame_range_basic_t *frame_basic = msg;
 	uint8_t msg_accepted = 0;
 
-	PRINTF("[inphase] inphase_receive: 0x%x\n", frame_basic->frame_type);
+	//PRINTF("[inphase] inphase_receive: 0x%x\n", frame_basic->frame_type);
 
 	switch (frame_basic->frame_type) {
 		case RANGE_REQUEST:
@@ -912,6 +921,6 @@ void inphase_receive(const uint16_t *src, uint16_t msg_len, void *msg)
 	if (msg_accepted) {
 		statemachine(frame_basic->frame_type, &frame_basic->content);
 	} else {
-		PRINTF("[inphase] inphase_receive: discard.\n");
+		//PRINTF("[inphase] inphase_receive: discard.\n");
 	}
 }

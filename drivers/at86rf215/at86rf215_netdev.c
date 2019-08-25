@@ -54,9 +54,9 @@ static void _irq_handler(void *arg)
 
 	/*** test ***/
 	if(sigSync_test == 1) {
-		puts("[rf215] sigSync_test\n");
-		at86rf215_reg_read((at86rf2xx_t *)arg, AT86RF215_REG__BBC1_IRQS);
+		//puts("[rf215] sigSync_test\n");
 		gpio_clear(GPIO_PIN(PORT_B, 9));
+		at86rf215_reg_read((at86rf2xx_t *)arg, AT86RF215_REG__BBC1_IRQS);
 		return;
 	}
 //	uint8_t tmp = at86rf215_reg_read((at86rf2xx_t *)arg, AT86RF215_REG__BBC1_IRQS);
