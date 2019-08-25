@@ -80,11 +80,11 @@ uint8_t at86rf215_get_chan(const at86rf2xx_t *dev)
 void at86rf215_set_chan(at86rf2xx_t *dev, uint8_t channel)
 {
 	if(dev->rf == _RF24_) {
-		if ((channel > AT86RF215_24_CH_MAX) ||
-			(channel < AT86RF215_24_CH_MIN) ||
-			(dev->netdev.chan == channel)) {
-			return;
-		}
+//		if ((channel > AT86RF215_24_CH_MAX) ||
+//			(channel < AT86RF215_24_CH_MIN) ||
+//			(dev->netdev.chan == channel)) {
+//			return;
+//		}
 	} else {
 		if ((channel > AT86RF215_SUB_CH_MAX) ||
 			(dev->netdev.chan == channel)) {

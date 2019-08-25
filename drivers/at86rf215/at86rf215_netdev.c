@@ -476,11 +476,11 @@ static int _set(netdev_t *netdev, netopt_t opt, const void *val, size_t len)
             assert(len == sizeof(uint16_t));
             uint8_t chan = (((const uint16_t *)val)[0]) & UINT8_MAX;
 			if(dev->rf == _RF24_) {
-				if ((chan > AT86RF215_24_CH_MAX) ||
-					(chan < AT86RF215_24_CH_MIN)) {
-					res = -EINVAL;
-					break;
-				}
+//				if ((chan > AT86RF215_24_CH_MAX) ||
+//					(chan < AT86RF215_24_CH_MIN)) {
+//					res = -EINVAL;
+//					break;
+//				}
 			} else {
 				if (chan > AT86RF215_SUB_CH_MAX) {
 					res = -EINVAL;

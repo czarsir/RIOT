@@ -145,8 +145,8 @@ void at86rf215_configure_phy(at86rf2xx_t *dev)
 	at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__CS, 0x14); // 0x30*25k=1.2M (Hz)
 	at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__CCF0L, 0xa0);
 	at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__CCF0H, 0x8c); // 0x86f1*25k=863.625M (Hz)
-	//at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__CNL, dev->netdev.chan);
-	at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__CNL, 6);
+	at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__CNL, dev->netdev.chan);
+	//at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__CNL, 6);
 	/*** channel scheme ***/
 	at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__CNM, 0);
 
