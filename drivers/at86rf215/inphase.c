@@ -352,7 +352,7 @@ static void sender_pmu(void)
 	at86rf215_reg_write(pDev,  pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TXPREP);
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TX);
 	/*** wait for receiver to measure ***/
-	xtimer_usleep(460);
+	xtimer_usleep(480);
 }
 
 static void receiver_pmu(uint8_t* pmu_value)
@@ -360,9 +360,10 @@ static void receiver_pmu(uint8_t* pmu_value)
 	//at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TXPREP);
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_RX);
 	/*** wait for sender to be ready ***/
-	xtimer_usleep(380); // tx_delay + PHR = 297, extra = 50.
+	xtimer_usleep(400); // tx_delay + PHR = 297, extra = 50.
 
-	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0xd5); // 0b 110 101 01.
+	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0xdf); // 0b 110 111 11.
+	xtimer_usleep(5);
 	*pmu_value = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PMUVAL);
 	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0);
 }
