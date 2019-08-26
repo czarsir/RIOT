@@ -33,7 +33,7 @@ static Settings settings;
 static uint8_t status_code;
 static uint8_t next_status_code;
 static uint8_t retransmissions;
-static uint8_t next_result_start;
+static uint16_t next_result_start;
 
 /*** Sync ***/
 volatile uint8_t sigSync;
@@ -289,20 +289,20 @@ static void backup_registers(void)
 
 static void restore_registers(void)
 {
-//	at86rf215_set_state(pDev, AT86RF215_STATE_RF_TRXOFF);
-//
-//	/*** Frequency ***/
-//	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CS, rfCS);
-//	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CCF0L, rfCCF0L);
-//	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CCF0H, rfCCF0H);
-//	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CNL, rfCNL);
-//	/* channel scheme */
-//	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CNM, 0);
-//
-//	/*** Interrupt ***/
-//	at86rf215_reg_read(pDev, AT86RF215_REG__BBC0_IRQS);
-//	at86rf215_reg_write(pDev, AT86RF215_REG__BBC0_IRQM, bbcIRQ);
-//
+	at86rf215_set_state(pDev, AT86RF215_STATE_RF_TRXOFF);
+
+	/*** Frequency ***/
+	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CS, rfCS);
+	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CCF0L, rfCCF0L);
+	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CCF0H, rfCCF0H);
+	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CNL, rfCNL);
+	/* channel scheme */
+	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CNM, 0);
+
+	/*** Interrupt ***/
+	at86rf215_reg_read(pDev, AT86RF215_REG__BBC1_IRQS);
+	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__IRQM, bbcIRQ);
+
 //	/*** restore State ***/
 //	//at86rf215_set_state(pDev, preState);
 	at86rf215_set_state(pDev, AT86RF215_STATE_RF_RX);
@@ -351,7 +351,7 @@ static void sender_pmu(void)
 	at86rf215_reg_write(pDev,  pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TXPREP);
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TX);
 	/*** wait for receiver to measure ***/
-	xtimer_usleep(450);
+	xtimer_usleep(400);
 }
 
 static void receiver_pmu(uint8_t* pmu_value)
@@ -359,9 +359,11 @@ static void receiver_pmu(uint8_t* pmu_value)
 	//at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TXPREP);
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_RX);
 	/*** wait for sender to be ready ***/
-	xtimer_usleep(400); // tx_delay + PHR = 297, extra = 50.
+	xtimer_usleep(350); // tx_delay + PHR = 297, extra = 50.
 
+	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0xd5); // 0b 110 101 01.
 	*pmu_value = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PMUVAL);
+	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0);
 }
 
 static void pmu_magic_mode_classic(pmu_magic_role_t role)
@@ -498,7 +500,7 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 	/*** test ***/
 	sigSync_test = 1;
 	if(role == PMU_MAGIC_ROLE_INITIATOR) {
-		at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__IRQM, AT86RF215_BBCn_IRQM__RXFS_M);
+		//at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__IRQM, AT86RF215_BBCn_IRQM__RXFS_M);
 	}
 
 	if (role == PMU_MAGIC_ROLE_REFLECTOR) {
@@ -562,7 +564,7 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 	// TODO ding
 	/*** PMU ***/
 	/* CCFTS 0 | IQSEL 1 | FED 0 | SYNC 111 | AVG 0 | EN 1 */
-	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0x5d);  // PUM enable
+//	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0x5d);  // PUM enable
 //	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0x01);  // PUM enable
 
 	wait_for_timer(1);
@@ -627,7 +629,7 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 BAIL:
 
 	stop_timer();
-	at86rf215_reset(pDev);
+	//at86rf215_reset(pDev);
 	restore_registers();
 	//watchdog_start();
 
