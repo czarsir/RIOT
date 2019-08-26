@@ -38,6 +38,7 @@ static uint16_t next_result_start;
 /*** Sync ***/
 volatile uint8_t sigSync;
 volatile uint8_t sigSync_test = 0;
+volatile uint8_t sigSync_i;
 
 /*** Buffer ***/
 uint8_t fbRx[FRAME_BUFFER_LENGTH];
@@ -55,7 +56,7 @@ extern uint8_t inphase_connection_send_lite(uint16_t dest, uint8_t msg_len, void
 extern uint8_t inphase_connection_close(void);
 /*** Timer ***/
 extern void init_timer(void);
-extern void start_timer(void);
+extern void start_timer(unsigned int value);
 extern void wait_for_timer(uint8_t id);
 extern void stop_timer(void);
 
@@ -351,7 +352,7 @@ static void sender_pmu(void)
 	at86rf215_reg_write(pDev,  pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TXPREP);
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TX);
 	/*** wait for receiver to measure ***/
-	xtimer_usleep(400);
+	xtimer_usleep(460);
 }
 
 static void receiver_pmu(uint8_t* pmu_value)
@@ -359,7 +360,7 @@ static void receiver_pmu(uint8_t* pmu_value)
 	//at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TXPREP);
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_RX);
 	/*** wait for sender to be ready ***/
-	xtimer_usleep(350); // tx_delay + PHR = 297, extra = 50.
+	xtimer_usleep(380); // tx_delay + PHR = 297, extra = 50.
 
 	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0xd5); // 0b 110 101 01.
 	*pmu_value = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PMUVAL);
@@ -369,10 +370,10 @@ static void receiver_pmu(uint8_t* pmu_value)
 static void pmu_magic_mode_classic(pmu_magic_role_t role)
 {
 	uint8_t i;
-	for (i=0; i < PMU_MEASUREMENTS; i++) {
+	for (i=sigSync_i; i < PMU_MEASUREMENTS; i++) {
 		// use 500 kHz spacing
 //		uint8_t f, f_full, f_half;
-		gpio_set(GPIO_PIN(PORT_B, 9));
+		//gpio_set(GPIO_PIN(PORT_B, 9));
 		switch (role) {
 			case PMU_MAGIC_ROLE_INITIATOR:		// initiator
 //				f = i;
@@ -394,6 +395,11 @@ static void pmu_magic_mode_classic(pmu_magic_role_t role)
 				break;
 		}
 		wait_for_timer(5);
+
+		sigSync_i = i+1;
+		if ( (sigSync_i%20) == 0 ) {
+			break;
+		}
 	}
 }
 
@@ -433,6 +439,8 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 	// this line is normally only done at the reflector:
 //	hal_subregister_write(SR_TOM_EN, 0x0);			// disable TOM mode (unclear why this is done here)
 
+	sigSync_i = 0;
+SYNC:
 	// TODO ding
 	/*** Sync config ***/
 	switch (role) {
@@ -498,7 +506,7 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 	at86rf215_reg_read(pDev, AT86RF215_REG__BBC0_IRQS);
 	at86rf215_reg_read(pDev, AT86RF215_REG__BBC1_IRQS);
 	/*** test ***/
-	sigSync_test = 1;
+	//sigSync_test = 1;
 	if(role == PMU_MAGIC_ROLE_INITIATOR) {
 		//at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__IRQM, AT86RF215_BBCn_IRQM__RXFS_M);
 	}
@@ -506,12 +514,12 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 	if (role == PMU_MAGIC_ROLE_REFLECTOR) {
 		//xtimer_usleep(9.5243);	// DIG2 signal is on average 9.5243 us delayed on the initiator, reflector waits
 	} else {
-		xtimer_usleep(1470);
+		//xtimer_usleep(1470);
 	}
 
 	/****** Sync (done) ******/
 
-	start_timer();		// timer counts to 7, we have 244us between synchronization points
+	//start_timer();		// timer counts to 7, we have 244us between synchronization points
 
 	// now in sync with the other node
 
@@ -621,6 +629,10 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 		default:
 			pmu_magic_mode_classic(role);
 			break;
+	}
+	if (sigSync_i < PMU_MEASUREMENTS) {
+		stop_timer();
+		goto SYNC;
 	}
 	ret_val = 0;
 	/*** test ***/

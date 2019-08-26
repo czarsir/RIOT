@@ -17,7 +17,7 @@
 #define _TIMER            1
 #define _TIMER_CHANNEL    0
 #define _TIMER_FREQUENCY  (1000000ul)  // 1MHz <-> 1 us
-#define _TIMER_VALUE      (1000)       // 1k <-> 1 ms
+#define _TIMER_VALUE      (1500)       // 1k <-> 1 ms
 
 /********* Application *******************************************************/
 
@@ -88,10 +88,10 @@ int init_timer(void)
 	return 0;
 }
 
-void start_timer(void)
+void start_timer(unsigned int value)
 {
 	timer_lock = 1;
-	timer_set_absolute(_TIMER, _TIMER_CHANNEL, _TIMER_VALUE);
+	timer_set_absolute(_TIMER, _TIMER_CHANNEL, value);
 	TIM5->CNT = 0;
 	timer_start(_TIMER);
 }

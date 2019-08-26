@@ -75,6 +75,7 @@ static void _irq_handler(void *arg)
 		/*** check: sync (successful) ***/
 		gpio_clear(GPIO_PIN(PORT_B, 9));
 		/*** TODO timer should start from here. ***/
+		start_timer(4000);
 		return;
 	}
 
