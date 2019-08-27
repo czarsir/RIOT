@@ -265,6 +265,8 @@ static int8_t wait_for_dig2(void)
 
 /*** State ***/
 static uint8_t preState;
+/*** BBC ***/
+static uint8_t bbcPC;
 /*** Frequency ***/
 static uint8_t rfCS;
 static uint8_t rfCCF0L;
@@ -277,6 +279,9 @@ static void backup_registers(void)
 {
 	/*** State ***/
 	preState = at86rf215_set_state(pDev, AT86RF215_STATE_RF_TRXOFF);
+
+	/*** BBC ***/
+	bbcPC = at86rf215_reg_read(dev, pDev->bbc|AT86RF215_REG__PC);
 
 	/*** Frequency ***/
 	rfCS = at86rf215_reg_read(pDev, pDev->rf|AT86RF215_REG__CS);
@@ -291,6 +296,9 @@ static void backup_registers(void)
 static void restore_registers(void)
 {
 	at86rf215_set_state(pDev, AT86RF215_STATE_RF_TRXOFF);
+
+	/*** BBC ***/
+	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PC, bbcPC);
 
 	/*** Frequency ***/
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CS, rfCS);
@@ -578,6 +586,11 @@ SYNC:
 
 	wait_for_timer(1);
 
+	/*** Continuous Transmit ***/
+	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PC, bbcPC|0x80);
+	/*** TX DAC overwrite ***/
+	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__TXDACI, 0x80|0x7E);
+	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__TXDACQ, 0x80|0x3F);
 #define BUFF_LEN 12
 	/*** write 0 to buffer ***/
 	uint8_t fb_data[BUFF_LEN] = {0};
@@ -631,6 +644,11 @@ SYNC:
 			pmu_magic_mode_classic(role);
 			break;
 	}
+	/*** Continuous Transmit ***/
+	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PC, bbcPC);
+	/*** TX DAC overwrite ***/
+	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__TXDACI, 0);
+	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__TXDACQ, 0);
 	if (sigSync_i < PMU_MEASUREMENTS) {
 		stop_timer();
 		goto SYNC;

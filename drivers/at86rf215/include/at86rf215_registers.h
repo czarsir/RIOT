@@ -72,6 +72,9 @@ extern "C" {
 #define AT86RF215_REG__TXCUTC                                   (0x0012)
 #define AT86RF215_REG__TXDFE                                    (0x0013)
 #define AT86RF215_REG__PAC                                      (0x0014)
+/* TX DAC Overwrite */
+#define AT86RF215_REG__TXDACI                                   (0x0027)
+#define AT86RF215_REG__TXDACQ                                   (0x0028)
 
 /****** BBC ***************************************/
 
