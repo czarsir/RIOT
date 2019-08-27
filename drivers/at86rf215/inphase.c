@@ -281,7 +281,7 @@ static void backup_registers(void)
 	preState = at86rf215_set_state(pDev, AT86RF215_STATE_RF_TRXOFF);
 
 	/*** BBC ***/
-	bbcPC = at86rf215_reg_read(dev, pDev->bbc|AT86RF215_REG__PC);
+	bbcPC = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PC);
 
 	/*** Frequency ***/
 	rfCS = at86rf215_reg_read(pDev, pDev->rf|AT86RF215_REG__CS);
@@ -370,8 +370,8 @@ static void receiver_pmu(uint8_t* pmu_value)
 	/*** wait for sender to be ready ***/
 	xtimer_usleep(400); // tx_delay + PHR = 297, extra = 50.
 
-	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0xdf); // 0b 110 111 11.
-	xtimer_usleep(5);
+	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0xdd); // 0b 110 111 01.
+	//xtimer_usleep(5);
 	*pmu_value = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PMUVAL);
 	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0);
 }
@@ -406,7 +406,7 @@ static void pmu_magic_mode_classic(pmu_magic_role_t role)
 		wait_for_timer(5);
 
 		sigSync_i = i+1;
-		if ( (sigSync_i%20) == 0 ) {
+		if ( (sigSync_i%100) == 0 ) {
 			break;
 		}
 	}
@@ -589,8 +589,8 @@ SYNC:
 	/*** Continuous Transmit ***/
 	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PC, bbcPC|0x80);
 	/*** TX DAC overwrite ***/
-	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__TXDACI, 0x80|0x7E);
-	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__TXDACQ, 0x80|0x3F);
+	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__TXDACI, 0x80|0x7E);
+	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__TXDACQ, 0x80|0x3F);
 #define BUFF_LEN 12
 	/*** write 0 to buffer ***/
 	uint8_t fb_data[BUFF_LEN] = {0};
@@ -647,8 +647,8 @@ SYNC:
 	/*** Continuous Transmit ***/
 	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PC, bbcPC);
 	/*** TX DAC overwrite ***/
-	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__TXDACI, 0);
-	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__TXDACQ, 0);
+	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__TXDACI, 0);
+	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__TXDACQ, 0);
 	if (sigSync_i < PMU_MEASUREMENTS) {
 		stop_timer();
 		goto SYNC;

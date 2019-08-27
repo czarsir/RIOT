@@ -58,7 +58,7 @@ void at86rf215_setup(at86rf2xx_t *dev, at86rf2xx_t *dev1, const at86rf215_params
 	gpio_clear(GPIO_PIN(PORT_B, 9));
 
 	/*** hardware reset ***/
-	//at86rf215_hardware_reset(dev);
+	at86rf215_hardware_reset(dev);
 	at86rf215_set_state(dev, AT86RF215_STATE_RF_TRXOFF);
 	at86rf215_set_state(dev1, AT86RF215_STATE_RF_TRXOFF);
 
