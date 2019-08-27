@@ -309,11 +309,11 @@ void at86rf215_set_tx_frontend(at86rf2xx_t *dev)
 	/* RCUT | DM: Direct Modulation | SR: TX Sample Rate */
 	tmp = at86rf215_reg_read(dev, dev->rf|AT86RF215_REG__TXDFE);
 	tmp = 0;
-	tmp = (0x4 << 5) | (0x1 << 4) | (0x1);
+	tmp = (0x4 << 5) | (0x0 << 4) | (0x1);
 	at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__TXDFE, tmp);
 
 	/* [FSK] Direct Modulation */
-	tmp = 0x1;
+	tmp = 0x0;
 	at86rf215_reg_write(dev, dev->bbc|AT86RF215_REG__FSKDM, tmp);
 
 	/*** analog frontend ***/
@@ -329,7 +329,7 @@ void at86rf215_set_rx_frontend(at86rf2xx_t *dev)
 	uint8_t tmp;
 
 	/*** analog frontend ***/
-	tmp = (0x1 << 4) | (0x8); // 0x7: 800 kHz.
+	tmp = (0x1 << 4) | (0xb); // 0x7: 800 kHz.
 	at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__RXBWC, tmp);
 
 	/*** digital frontend ***/

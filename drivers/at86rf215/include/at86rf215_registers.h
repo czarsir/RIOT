@@ -113,6 +113,7 @@ extern "C" {
 /*** PMU ***/
 #define AT86RF215_REG__PMUC                                     (0x0080)
 #define AT86RF215_REG__PMUVAL                                   (0x0081)
+#define AT86RF215_REG__PMUQF                                    (0x0082)
 
 /* RX Frame Buffer */
 #define AT86RF215_REG__BBC0_FBRXS                               (0x2000)

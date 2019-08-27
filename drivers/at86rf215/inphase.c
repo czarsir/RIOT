@@ -44,6 +44,7 @@ volatile uint8_t sigSync_i;
 uint8_t fbRx[FRAME_BUFFER_LENGTH];
 /* allocate an array for the measurement results */
 static uint8_t local_pmu_values[PMU_MEASUREMENTS];
+static uint8_t pmuQF[PMU_MEASUREMENTS];
 /* reuse buffer to save memory */
 static int8_t* signed_local_pmu_values = (int8_t*)local_pmu_values;
 
@@ -363,16 +364,17 @@ static void sender_pmu(void)
 	xtimer_usleep(480);
 }
 
-static void receiver_pmu(uint8_t* pmu_value)
+static void receiver_pmu(uint8_t* pmu_value, uint8_t* pmuQF)
 {
 	//at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TXPREP);
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_RX);
 	/*** wait for sender to be ready ***/
 	xtimer_usleep(400); // tx_delay + PHR = 297, extra = 50.
 
-	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0xdd); // 0b 110 111 01.
+	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0x5d); // 0b 010 111 01.
 	//xtimer_usleep(5);
 	*pmu_value = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PMUVAL);
+	*pmuQF = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PMUQF);
 	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0);
 }
 
@@ -390,7 +392,7 @@ static void pmu_magic_mode_classic(pmu_magic_role_t role)
 //				f_half = f & 0x01;
 				//setFrequency(PMU_START_FREQUENCY + f_full, f_half);
 				setFrequency(PMU_START_FREQUENCY + i, 0);
-				receiver_pmu(&local_pmu_values[i]);
+				receiver_pmu(&local_pmu_values[i], &pmuQF[i]);
 				sender_pmu();
 				break;
 			default:	// reflector
@@ -400,7 +402,7 @@ static void pmu_magic_mode_classic(pmu_magic_role_t role)
 				//setFrequency(PMU_START_FREQUENCY + f_full, f_half);
 				setFrequency(PMU_START_FREQUENCY + i, 0);
 				sender_pmu();
-				receiver_pmu(&local_pmu_values[i]);
+				receiver_pmu(&local_pmu_values[i], &pmuQF[i]);
 				break;
 		}
 		wait_for_timer(5);
@@ -427,7 +429,7 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 			PRINTF("[inphase] WARNING unknown role selected. Continue as Reflector\n");
 			break;
 	}
-	PRINTF("[inphase] PMU mode 0x%x\n", (uint8_t) mode);
+	//PRINTF("[inphase] PMU mode 0x%x\n", (uint8_t) mode);
 
 	/* Boundary */
 	//AT86RF233_ENTER_CRITICAL_REGION();
@@ -589,7 +591,7 @@ SYNC:
 	/*** Continuous Transmit ***/
 	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PC, bbcPC|0x80);
 	/*** TX DAC overwrite ***/
-	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__TXDACI, 0x80|0x7E);
+	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__TXDACI, 0x80|0x3F);
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__TXDACQ, 0x80|0x3F);
 #define BUFF_LEN 12
 	/*** write 0 to buffer ***/
@@ -746,7 +748,7 @@ void statemachine(uint8_t frame_type, frame_subframe_t *frame)
 					xtimer_sleep(1);
 					next_result_start = 0;
 					send_result_request(next_result_start);
-					DEBUG("[inphase] send %u\n", next_result_start);
+					//DEBUG("[inphase] send %u\n", next_result_start);
 					retransmissions = RESULT_REQUEST_RETRANSMISSIONS; // maximum allowed retransmissions
 					//ctimer_set(&timeout_timer, REQUEST_TIMEOUT, trigger_network_timeout, NULL);
 					fsm_state = RESULT_REQUESTED;
@@ -791,10 +793,10 @@ void statemachine(uint8_t frame_type, frame_subframe_t *frame)
 					// got all results, finished
 					fsm_state = IDLE;
 					DEBUG("[inphase] done.\n");
-					DEBUG("[inphase] PMU:");
-//					for(int i=0; i<PMU_MEASUREMENTS; i++) {
-//						DEBUG(" %d", signed_local_pmu_values[i]);
-//					}
+					DEBUG("[inphase] PMU-QF:");
+					for(int i=0; i<PMU_MEASUREMENTS; i++) {
+						DEBUG(" %d", pmuQF[i]);
+					}
 					DEBUG("\n");
 					send_serial();
 				}
