@@ -130,9 +130,15 @@ void at86rf215_configure_phy(at86rf2xx_t *dev)
     /* we must be in TRX_OFF before changing the PHY configuration */
     uint8_t prev_state = at86rf215_set_state(dev, AT86RF215_STATE_RF_TRXOFF);
 
-    /* The TX power register must be updated after changing the channel if
-     * moving between bands. */
-	// TODO
+	/*** Test ***/
+//	if (dev->netdev.chan == 250) {
+//		uint8_t tmp = at86rf215_reg_read(dev, dev->bbc|AT86RF215_REG__PC);
+//		tmp |= 0x80; // Continuous Transmit
+//		at86rf215_reg_write(dev, dev->bbc|AT86RF215_REG__PC, tmp);
+//		/*** carrier only ***/
+//		at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__TXDACI, 0x80|0x3f);
+//		at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__TXDACQ, 0x80|0x3f);
+//	}
 
 //    uint8_t phy_cc_cca = at86rf215_reg_read(dev, AT86RF2XX_REG__PHY_CC_CCA);
 //    /* Clear previous configuration for channel number */
