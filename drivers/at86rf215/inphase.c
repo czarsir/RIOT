@@ -123,8 +123,9 @@ static void send_result_confirm(uint16_t start_address, uint16_t result_length)
 	f.content.result_confirm.result_data_type = RESULT_TYPE_PMU;
 	f.content.result_confirm.result_start_address = start_address;
 	f.content.result_confirm.result_length = result_length;
-	memcpy(&f.content.result_confirm.result_data, &local_pmu_values[start_address], result_length);
-	conn.send(settings.initiator, result_length+5, &f);
+	memcpy(f.content.result_confirm.result_data, &local_pmu_values[start_address], result_length);
+	// TODO sizeof(struct) could be unpredictable.
+	conn.send(settings.initiator, sizeof(frame_result_confirm_t)+1, &f);
 }
 
 /********* Output *********/
@@ -366,16 +367,16 @@ static void sender_pmu(void)
 
 static void receiver_pmu(uint8_t* pmu_value, uint8_t* pmuQF)
 {
-	//at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TXPREP);
+	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TXPREP);
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_RX);
 	/*** wait for sender to be ready ***/
 	xtimer_usleep(400); // tx_delay + PHR = 297, extra = 50.
 
-	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0x5d); // 0b 010 111 01.
+	//at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0x5d); // 0b 010 111 01.
 	//xtimer_usleep(5);
 	*pmu_value = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PMUVAL);
 	*pmuQF = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PMUQF);
-	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0);
+	//at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0);
 }
 
 static void pmu_magic_mode_classic(pmu_magic_role_t role)
@@ -392,6 +393,7 @@ static void pmu_magic_mode_classic(pmu_magic_role_t role)
 //				f_half = f & 0x01;
 				//setFrequency(PMU_START_FREQUENCY + f_full, f_half);
 				setFrequency(PMU_START_FREQUENCY + i, 0);
+				at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0xdd);
 				receiver_pmu(&local_pmu_values[i], &pmuQF[i]);
 				sender_pmu();
 				break;
@@ -401,10 +403,12 @@ static void pmu_magic_mode_classic(pmu_magic_role_t role)
 //				f_half = f & 0x01;
 				//setFrequency(PMU_START_FREQUENCY + f_full, f_half);
 				setFrequency(PMU_START_FREQUENCY + i, 0);
+				at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0xdd);
 				sender_pmu();
 				receiver_pmu(&local_pmu_values[i], &pmuQF[i]);
 				break;
 		}
+		at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0);
 		wait_for_timer(5);
 
 		sigSync_i = i+1;
@@ -582,8 +586,8 @@ SYNC:
 
 	// TODO ding
 	/*** PMU ***/
-	/* CCFTS 0 | IQSEL 1 | FED 0 | SYNC 111 | AVG 0 | EN 1 */
-//	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0x5d);  // PUM enable
+	/* CCFTS 1 | IQSEL 1 | FED 0 | SYNC 111 | AVG 0 | EN 1 */
+//	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0xdd);  // PUM enable
 //	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0x01);  // PUM enable
 
 	wait_for_timer(1);
@@ -591,8 +595,8 @@ SYNC:
 	/*** Continuous Transmit ***/
 	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PC, bbcPC|0x80);
 	/*** TX DAC overwrite ***/
-	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__TXDACI, 0x80|0x3F);
-	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__TXDACQ, 0x80|0x3F);
+	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__TXDACI, 0x80|0x3f);
+	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__TXDACQ, 0x80|0x3f);
 #define BUFF_LEN 12
 	/*** write 0 to buffer ***/
 	uint8_t fb_data[BUFF_LEN] = {0};
@@ -646,6 +650,8 @@ SYNC:
 			pmu_magic_mode_classic(role);
 			break;
 	}
+	/*** PMU ***/
+	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0);
 	/*** Continuous Transmit ***/
 	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PC, bbcPC);
 	/*** TX DAC overwrite ***/
@@ -778,6 +784,12 @@ void statemachine(uint8_t frame_type, frame_subframe_t *frame)
 				uint16_t last_start = frame->result_confirm.result_start_address;
 				uint16_t result_length = frame->result_confirm.result_length;
 
+                DEBUG("[inphase] PMU:");
+                for(int i=0; i<PMU_MEASUREMENTS; i++) {
+                    DEBUG(" %d", local_pmu_values[i]);
+                }
+                DEBUG("\n");
+
 				active_reflector_subtract(last_start, frame->result_confirm.result_data, result_length);
 
 				next_result_start = last_start + result_length;
@@ -793,11 +805,11 @@ void statemachine(uint8_t frame_type, frame_subframe_t *frame)
 					// got all results, finished
 					fsm_state = IDLE;
 					DEBUG("[inphase] done.\n");
-					DEBUG("[inphase] PMU-QF:");
-					for(int i=0; i<PMU_MEASUREMENTS; i++) {
-						DEBUG(" %d", pmuQF[i]);
-					}
-					DEBUG("\n");
+//					DEBUG("[inphase] PMU-QF:");
+//					for(int i=0; i<PMU_MEASUREMENTS; i++) {
+//						DEBUG(" %d", pmuQF[i]);
+//					}
+//					DEBUG("\n");
 					send_serial();
 				}
 			} else {
@@ -847,6 +859,12 @@ void statemachine(uint8_t frame_type, frame_subframe_t *frame)
 						fsm_state = IDLE;
 						status_code = DISTANCE_IDLE;
 						DEBUG("[inphase] done. %u\n", start_address);
+						DEBUG("[inphase] PMU:");
+						for(int i=0; i<PMU_MEASUREMENTS; i++) {
+							DEBUG(" %d", local_pmu_values[i]);
+						}
+						DEBUG("\n");
+
 					} else {
 						// initiator still needs results
 						uint8_t result_length;
@@ -937,8 +955,8 @@ void inphase_receive(const uint16_t *src, uint16_t msg_len, void *msg)
 			}
 			break;
 		case RESULT_CONFIRM: {
-			frame_result_confirm_t *frame_result = &frame_basic->content.result_confirm;
-			if (msg_len == (frame_result->result_length + 5)) {
+			//frame_result_confirm_t *frame_result = &frame_basic->content.result_confirm;
+			if (msg_len == sizeof(frame_result_confirm_t)+1) {
 				// correct message length
 				msg_accepted = 1;
 			}
