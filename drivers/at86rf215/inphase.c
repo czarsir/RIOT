@@ -375,7 +375,8 @@ static void receiver_pmu(uint8_t* pmu_value, uint8_t* pmuQF)
 	//at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0x5d); // 0b 010 111 01.
 	//xtimer_usleep(5);
 	*pmu_value = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PMUVAL);
-	*pmuQF = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PMUQF);
+	//*pmuQF = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PMUQF);
+	(void)pmuQF;
 	//at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0);
 }
 
