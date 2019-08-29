@@ -595,7 +595,7 @@ SYNC:
 	/*** Continuous Transmit ***/
 	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PC, bbcPC|0x80);
 	/*** TX DAC overwrite ***/
-	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__TXDACI, 0x80|0x3f);
+	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__TXDACI, 0x80|0x7e);
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__TXDACQ, 0x80|0x3f);
 #define BUFF_LEN 12
 	/*** write 0 to buffer ***/
