@@ -368,7 +368,10 @@ static void sender_pmu(void)
 static void receiver_pmu(uint8_t* pmu_value, uint8_t* pmuQF)
 {
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TXPREP);
+	xtimer_usleep(10);
+	//at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0x5f);
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_RX);
+	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0x1f);
 	/*** wait for sender to be ready ***/
 	xtimer_usleep(400); // tx_delay + PHR = 297, extra = 50.
 
@@ -377,7 +380,7 @@ static void receiver_pmu(uint8_t* pmu_value, uint8_t* pmuQF)
 	*pmu_value = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PMUVAL);
 	//*pmuQF = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PMUQF);
 	(void)pmuQF;
-	//at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0);
+	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0);
 }
 
 static void pmu_magic_mode_classic(pmu_magic_role_t role)
@@ -394,7 +397,7 @@ static void pmu_magic_mode_classic(pmu_magic_role_t role)
 //				f_half = f & 0x01;
 				//setFrequency(PMU_START_FREQUENCY + f_full, f_half);
 				setFrequency(PMU_START_FREQUENCY + i, 0);
-				at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0xdd);
+				//at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0xdd);
 				receiver_pmu(&local_pmu_values[i], &pmuQF[i]);
 				sender_pmu();
 				break;
@@ -404,12 +407,12 @@ static void pmu_magic_mode_classic(pmu_magic_role_t role)
 //				f_half = f & 0x01;
 				//setFrequency(PMU_START_FREQUENCY + f_full, f_half);
 				setFrequency(PMU_START_FREQUENCY + i, 0);
-				at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0xdd);
+				//at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0xdd);
 				sender_pmu();
 				receiver_pmu(&local_pmu_values[i], &pmuQF[i]);
 				break;
 		}
-		at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0);
+		//at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0);
 		wait_for_timer(5);
 
 		sigSync_i = i+1;
