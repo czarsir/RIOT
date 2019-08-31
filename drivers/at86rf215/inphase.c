@@ -269,6 +269,8 @@ static int8_t wait_for_dig2(void)
 static uint8_t preState;
 /*** BBC ***/
 static uint8_t bbcPC;
+/*** RF ***/
+static uint8_t rfRXDFE;
 /*** Frequency ***/
 static uint8_t rfCS;
 static uint8_t rfCCF0L;
@@ -284,6 +286,9 @@ static void backup_registers(void)
 
 	/*** BBC ***/
 	bbcPC = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PC);
+
+	/*** RF ***/
+	rfRXDFE = at86rf215_reg_read(pDev, pDev->rf|AT86RF215_REG__RXDFE);
 
 	/*** Frequency ***/
 	rfCS = at86rf215_reg_read(pDev, pDev->rf|AT86RF215_REG__CS);
@@ -301,6 +306,9 @@ static void restore_registers(void)
 
 	/*** BBC ***/
 	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PC, bbcPC);
+
+	/*** RF ***/
+	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__RXDFE, rfRXDFE);
 
 	/*** Frequency ***/
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CS, rfCS);
@@ -325,24 +333,6 @@ static void restore_registers(void)
  */
 static void setFrequency(uint16_t f, uint8_t offset)
 {
-//	if (f < 2322) {
-//		// frequency is not supported
-//	} else if (f < 2434) {
-//		// CC_BAND is 0x8
-//		hal_register_write(RG_CC_CTRL_1, 0x08);
-//		f -= 2306;			// f is now between 0x10 and 0x7F
-//	} else if (f < 2528) {
-//		// CC_BAND is 0x9
-//		hal_register_write(RG_CC_CTRL_1, 0x09);
-//		f -= 2434;			// f is now between 0x00 and 0x5D
-//	} else {
-//		// frequency is not supported
-//	}
-//	f = f << 1;				// f is now between 0x00 and 0xFE
-//	if (offset) {
-//		f += 1;				// f is chosen 0.5 MHz higher (0x01 to 0xFF)
-//	}
-
 	(void)offset;
 	at86rf215_set_state(pDev, AT86RF215_STATE_RF_TRXOFF);
 
@@ -355,6 +345,11 @@ static void setFrequency(uint16_t f, uint8_t offset)
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CNL, f);
 	/* channel scheme */
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CNM, 0);
+
+	if (offset == 1) {
+		uint8_t tmp = (0x1 << 5) | (0x1);
+		at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__RXDFE, tmp);
+	}
 }
 
 static void sender_pmu(void)
@@ -362,23 +357,23 @@ static void sender_pmu(void)
 	at86rf215_reg_write(pDev,  pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TXPREP);
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TX);
 	/*** wait for receiver to measure ***/
-	xtimer_usleep(480);
+	xtimer_usleep(110);
 }
 
 static void receiver_pmu(uint8_t* pmu_value, uint8_t* pmuQF)
 {
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TXPREP);
-	xtimer_usleep(10);
-	//at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0x5f);
+	//xtimer_usleep(10);
+	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0x81);
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_RX);
-	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0x1f);
+	//at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0x41);
 	/*** wait for sender to be ready ***/
-	xtimer_usleep(400); // tx_delay + PHR = 297, extra = 50.
+	xtimer_usleep(40); // tx_delay + PHR = 297, extra = 50.
 
 	//at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0x5d); // 0b 010 111 01.
 	//xtimer_usleep(5);
 	*pmu_value = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PMUVAL);
-	//*pmuQF = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PMUQF);
+	*pmuQF = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PMUQF);
 	(void)pmuQF;
 	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0);
 }
@@ -836,11 +831,11 @@ void statemachine(uint8_t frame_type, frame_subframe_t *frame)
 					// got all results, finished
 					fsm_state = IDLE;
 					DEBUG("[inphase] done.\n");
-//					DEBUG("[inphase] PMU-QF:");
-//					for(int i=0; i<PMU_MEASUREMENTS; i++) {
-//						DEBUG(" %d", pmuQF[i]);
-//					}
-//					DEBUG("\n");
+					DEBUG("[inphase] PMU-QF:");
+					for(int i=0; i<PMU_MEASUREMENTS; i++) {
+						DEBUG(" %d", pmuQF[i]);
+					}
+					DEBUG("\n");
 					send_serial();
 				}
 			} else {
