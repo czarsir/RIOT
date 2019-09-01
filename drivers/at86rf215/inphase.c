@@ -267,6 +267,7 @@ static int8_t wait_for_dig2(void)
 
 /*** State ***/
 static uint8_t preState;
+static uint8_t preMode;
 /*** BBC ***/
 static uint8_t bbcPC;
 /*** RF ***/
@@ -283,6 +284,8 @@ static void backup_registers(void)
 {
 	/*** State ***/
 	preState = at86rf215_set_state(pDev, AT86RF215_STATE_RF_TRXOFF);
+
+	preMode = at86rf215_reg_read(pDev, AT86RF215_REG__RF_IQIFC1);
 
 	/*** BBC ***/
 	bbcPC = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PC);
@@ -303,6 +306,8 @@ static void backup_registers(void)
 static void restore_registers(void)
 {
 	at86rf215_set_state(pDev, AT86RF215_STATE_RF_TRXOFF);
+
+	at86rf215_reg_write(pDev, AT86RF215_REG__RF_IQIFC1, preMode);
 
 	/*** BBC ***/
 	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PC, bbcPC);
@@ -345,11 +350,6 @@ static void setFrequency(uint16_t f, uint8_t offset)
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CNL, f);
 	/* channel scheme */
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CNM, 0);
-
-	if (offset == 1) {
-		uint8_t tmp = (0x1 << 5) | (0x1);
-		at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__RXDFE, tmp);
-	}
 }
 
 static void sender_pmu(void)
@@ -357,25 +357,25 @@ static void sender_pmu(void)
 	at86rf215_reg_write(pDev,  pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TXPREP);
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TX);
 	/*** wait for receiver to measure ***/
-	xtimer_usleep(110);
+	xtimer_usleep(150);
 }
 
 static void receiver_pmu(uint8_t* pmu_value, uint8_t* pmuQF)
 {
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TXPREP);
 	//xtimer_usleep(10);
-	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0x81);
+	//at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0x81);
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_RX);
 	//at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0x41);
 	/*** wait for sender to be ready ***/
-	xtimer_usleep(40); // tx_delay + PHR = 297, extra = 50.
+	xtimer_usleep(100); // tx_delay + PHR = 297, extra = 50.
 
 	//at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0x5d); // 0b 010 111 01.
 	//xtimer_usleep(5);
 	*pmu_value = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PMUVAL);
 	*pmuQF = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PMUQF);
 	(void)pmuQF;
-	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0);
+	//at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0);
 }
 
 //void dingtest(void)
@@ -611,15 +611,23 @@ SYNC:
 //	hal_subregister_write(SR_TX_RX_SEL, 1);		// manual control of PLL frequency mode
 
 	// TODO ding
+	uint8_t tmp;
+	at86rf215_reg_write(pDev, AT86RF215_REG__RF_IQIFC1, 0x12);
+	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PC, 0x04);
+	tmp = (0x0 << 4) | (0x8); // 0x7: 800 kHz.
+	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__RXBWC, tmp);
+	/* RCUT | - | SR: RX Sample Rate */
+	tmp = (0x4 << 5) | (0x4);
+	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__RXDFE, tmp);
 	/*** PMU ***/
 	/* CCFTS 1 | IQSEL 1 | FED 0 | SYNC 111 | AVG 0 | EN 1 */
-//	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0xdd);  // PUM enable
-//	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0x01);  // PUM enable
+	tmp = 0x81;
+	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, tmp);
 
 	wait_for_timer(1);
 
 	/*** Continuous Transmit ***/
-	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PC, bbcPC|0x80);
+	//at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PC, bbcPC|0x80);
 	/*** TX DAC overwrite ***/
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__TXDACI, 0x80|0x7e);
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__TXDACQ, 0x80|0x3f);

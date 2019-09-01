@@ -135,6 +135,10 @@ void at86rf215_configure_phy(at86rf2xx_t *dev)
 //		uint8_t tmp = at86rf215_reg_read(dev, dev->bbc|AT86RF215_REG__PC);
 //		tmp |= 0x80; // Continuous Transmit
 //		at86rf215_reg_write(dev, dev->bbc|AT86RF215_REG__PC, tmp);
+//		tmp = 0x12;
+//		at86rf215_reg_write(dev, AT86RF215_REG__RF_IQIFC1, tmp);
+//		tmp = 0x04;
+//		at86rf215_reg_write(dev, dev->bbc|AT86RF215_REG__PC, tmp);
 //		/*** carrier only ***/
 //		at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__TXDACI, 0x80|0x7e);
 //		at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__TXDACQ, 0x80|0x3f);
