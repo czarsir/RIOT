@@ -271,6 +271,7 @@ static uint8_t preMode;
 /*** BBC ***/
 static uint8_t bbcPC;
 /*** RF ***/
+static uint8_t rfRXBWC;
 static uint8_t rfRXDFE;
 /*** Frequency ***/
 static uint8_t rfCS;
@@ -291,6 +292,7 @@ static void backup_registers(void)
 	bbcPC = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PC);
 
 	/*** RF ***/
+	rfRXBWC = at86rf215_reg_read(pDev, pDev->rf|AT86RF215_REG__RXBWC);
 	rfRXDFE = at86rf215_reg_read(pDev, pDev->rf|AT86RF215_REG__RXDFE);
 
 	/*** Frequency ***/
@@ -313,6 +315,7 @@ static void restore_registers(void)
 	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PC, bbcPC);
 
 	/*** RF ***/
+	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__RXBWC, rfRXBWC);
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__RXDFE, rfRXDFE);
 
 	/*** Frequency ***/
