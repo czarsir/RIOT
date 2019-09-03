@@ -360,7 +360,7 @@ static void sender_pmu(void)
 	at86rf215_reg_write(pDev,  pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TXPREP);
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TX);
 	/*** wait for receiver to measure ***/
-	xtimer_usleep(150);
+	xtimer_usleep(120);
 }
 
 static void receiver_pmu(uint8_t* pmu_value, uint8_t* pmuQF)
@@ -371,7 +371,7 @@ static void receiver_pmu(uint8_t* pmu_value, uint8_t* pmuQF)
 	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_RX);
 	//at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0x41);
 	/*** wait for sender to be ready ***/
-	xtimer_usleep(100); // tx_delay + PHR = 297, extra = 50.
+	xtimer_usleep(70); // tx_delay + PHR = 297, extra = 50.
 
 	//at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0x5d); // 0b 010 111 01.
 	//xtimer_usleep(5);
