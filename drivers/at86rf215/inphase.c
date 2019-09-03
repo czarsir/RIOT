@@ -378,32 +378,50 @@ static void receiver_pmu(uint8_t* pmu_value, uint8_t* pmuQF)
 	//at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0);
 }
 
-//void dingtest(void)
-//{
-//	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TXPREP);
-//	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_RX);
-////	uint8_t tmp = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PC);
-////	tmp &= ~(0x80); // Continuous Transmit
-////	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PC, tmp);
-//}
-//void dingpmu(void)
-//{
-//	uint8_t tmp;
-//	tmp = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PMUVAL);
-//	PRINTF("PMU: %u\n", tmp);
-//	tmp = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PMUC);
-//	PRINTF("PMUC: 0x%x\n", tmp);
-//	tmp = at86rf215_get_state(pDev);
-//	PRINTF("state: 0x%x\n", tmp);
-//}
-//void dingpmustart(void)
-//{
-//	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0x83);
-//}
-//void dingpmustop(void)
-//{
-//	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0);
-//}
+void dingtest(void)
+{
+	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TXPREP);
+	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_RX);
+//	uint8_t tmp = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PC);
+//	tmp &= ~(0x80); // Continuous Transmit
+//	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PC, tmp);
+}
+void dingpmu(void)
+{
+	uint8_t tmp;
+	tmp = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PMUVAL);
+	PRINTF("PMU: %u\n", tmp);
+	tmp = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PMUC);
+	PRINTF("PMUC: 0x%x\n", tmp);
+	tmp = at86rf215_get_state(pDev);
+	PRINTF("state: 0x%x\n", tmp);
+}
+void dingpmustart(void)
+{
+	uint8_t tmp;
+	at86rf215_set_state(pDev, AT86RF215_STATE_RF_TRXOFF);
+	//at86rf215_reg_write(pDev, AT86RF215_REG__RF_IQIFC1, 0x12);
+	//at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PC, 0x04);
+	tmp = (0x0 << 4) | (0x6); // 0x7: 800 kHz.
+	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__RXBWC, tmp);
+	/* RCUT | - | SR: RX Sample Rate */
+	tmp = (0x4 << 5) | (0x4);
+	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__RXDFE, tmp);
+	tmp = (0x1 << 5) | (0x1);
+	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__AGCS, tmp);
+
+    at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CS, 0x14);
+    at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CCF0L, 0xa0);
+    at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CCF0H, 0x8c);
+    at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CNL, 0);
+    at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CNM, 0);
+
+	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0x83);
+}
+void dingpmustop(void)
+{
+	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0);
+}
 
 static void pmu_magic_mode_classic(pmu_magic_role_t role)
 {
@@ -896,6 +914,11 @@ void statemachine(uint8_t frame_type, frame_subframe_t *frame)
 						DEBUG("[inphase] PMU:");
 						for(int i=0; i<PMU_MEASUREMENTS; i++) {
 							DEBUG(" %d", local_pmu_values[i]);
+						}
+						DEBUG("\n");
+						DEBUG("[inphase] PMU-QF:");
+						for(int i=0; i<PMU_MEASUREMENTS; i++) {
+						    DEBUG(" %d", pmuQF[i]);
 						}
 						DEBUG("\n");
 

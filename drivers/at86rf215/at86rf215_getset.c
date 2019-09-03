@@ -345,7 +345,7 @@ void at86rf215_set_rx_frontend(at86rf2xx_t *dev)
 	/* target level */
 	tmp = at86rf215_reg_read(dev, dev->rf|AT86RF215_REG__AGCS);
 	tmp &= ~(AT86RF215_RFn_AGC_TGT_M);
-	tmp |= (0x1 << 5);
+	tmp = (0x1 << 5) | (0x17); // 0x17 max
 	at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__AGCS, tmp);
 
 	/*** EDC ***/
