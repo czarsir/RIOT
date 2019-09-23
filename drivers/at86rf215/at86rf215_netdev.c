@@ -46,8 +46,9 @@ const netdev_driver_t at86rf2xx_driver = {
 
 static void _irq_handler(void *arg)
 {
-	netdev_t *dev = (netdev_t *) arg;
-	//at86rf2xx_t *dd = (at86rf2xx_t *) arg;
+	//netdev_t *dev = (netdev_t *) arg;
+	at86rf2xx_t *pp = (at86rf2xx_t *) arg;
+	//at86rf2xx_t *dev = (at86rf2xx_t *) arg;
 
 	/* use puts() instead of DEBUG(). stack too small */
 	//puts("[rf215] irq_handler\n");
@@ -56,7 +57,7 @@ static void _irq_handler(void *arg)
 	if(sigSync_test == 1) {
 		//puts("[rf215] sigSync_test\n");
 		gpio_clear(GPIO_PIN(PORT_B, 9));
-		at86rf215_reg_read((at86rf2xx_t *)arg, AT86RF215_REG__BBC1_IRQS);
+		//at86rf215_reg_read((at86rf2xx_t *)arg, AT86RF215_REG__BBC1_IRQS);
 		return;
 	}
 //	uint8_t tmp = at86rf215_reg_read((at86rf2xx_t *)arg, AT86RF215_REG__BBC1_IRQS);
@@ -82,8 +83,14 @@ static void _irq_handler(void *arg)
 	//at86rf215_set_state(dd, AT86RF215_STATE_RF_RX);
 	//at86rf215_reg_write(dd, AT86RF215_REG__RF09_CMD, AT86RF215_STATE_RF_RX);
 
-	if (dev->event_callback) {
-		dev->event_callback(dev, NETDEV_EVENT_ISR);
+	pp->bbcIRQ = at86rf215_reg_read(pp, AT86RF215_REG__BBC0_IRQS);
+	(pp+1)->bbcIRQ = at86rf215_reg_read((pp+1), AT86RF215_REG__BBC1_IRQS);
+
+	if ( ((netdev_t *)pp)->event_callback && (pp->bbcIRQ != 0) ) {
+		((netdev_t *)pp)->event_callback((netdev_t *)pp, NETDEV_EVENT_ISR);
+	}
+	if ( ((netdev_t *)(pp+1))->event_callback && ((pp+1)->bbcIRQ != 0)) {
+		((netdev_t *)(pp+1))->event_callback((netdev_t *)(pp+1), NETDEV_EVENT_ISR);
 	}
 }
 
@@ -99,7 +106,7 @@ static int _init(netdev_t *netdev)
 
 	/*** ISR ***/
 	if(dev->rf == _RF24_) {
-		gpio_init_int(dev->params.int_pin, GPIO_IN, GPIO_RISING, _irq_handler, dev);
+		gpio_init_int(dev->params.int_pin, GPIO_IN, GPIO_RISING, _irq_handler, dev->parent);
 	}
 
     /* test if the SPI is set up correctly and the device is responding */
@@ -626,11 +633,12 @@ static void _isr(netdev_t *netdev)
     }
 
     /* read (consume) device status */
-	if(dev->rf == _RF24_) {
-		irq_mask = at86rf215_reg_read(dev, AT86RF215_REG__BBC1_IRQS);
-	} else {
-		irq_mask = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_IRQS);
-	}
+//	if(dev->rf == _RF24_) {
+//		irq_mask = at86rf215_reg_read(dev, AT86RF215_REG__BBC1_IRQS);
+//	} else {
+//		irq_mask = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_IRQS);
+//	}
+	irq_mask = dev->bbcIRQ;
 
 //    trac_status = at86rf215_reg_read(dev, AT86RF215_REG__RF09_CMD)
 //                  & AT86RF2XX_TRX_STATE_MASK__TRAC;

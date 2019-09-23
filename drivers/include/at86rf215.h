@@ -117,6 +117,7 @@ typedef struct at86rf215_params {
 /*** Device descriptor for AT86RF215 radio devices ***/
 typedef struct {
     netdev_ieee802154_t netdev;             /**< netdev parent struct */
+	void *parent;
     /* device specific fields */
     at86rf215_params_t params;              /**< parameters for initialization */
     uint8_t state;                          /**< current state of the radio */
@@ -127,6 +128,8 @@ typedef struct {
                                              return to @ref at86rf2xx_t::idle_state */
 	uint16_t rf;
 	uint16_t bbc;
+	uint8_t rfIRQ;
+	uint8_t bbcIRQ;
 #if AT86RF2XX_HAVE_RETRIES
     /* Only radios with the XAH_CTRL_2 register support frame retry reporting */
     uint8_t tx_retries;                 /**< Number of NOACK retransmissions */

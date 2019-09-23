@@ -30,20 +30,26 @@ void at86rf215_setup(at86rf2xx_t *dev, at86rf2xx_t *dev1, const at86rf215_params
 	/*** initialize device descriptor ***/
 	/*** Transceiver 0 ***/
 	((netdev_t *)dev)->driver = &at86rf2xx_driver;
+	dev->parent = dev;
     memcpy(&dev->params, params, sizeof(at86rf215_params_t));
     dev->idle_state = AT86RF215_STATE_RF_RX;
     dev->state = AT86RF215_STATE_RF_RESET; //radio state is RESET when first powered-on/
     dev->pending_tx = 0;
 	dev->rf = _RF09_;
 	dev->bbc = _BBC0_;
+	dev->rfIRQ = 0;
+	dev->bbcIRQ = 0;
 	/*** Transceiver 1 ***/
 	((netdev_t *)dev1)->driver = &at86rf2xx_driver;
+	dev1->parent = dev;
 	memcpy(&dev1->params, params, sizeof(at86rf215_params_t));
 	dev1->idle_state = AT86RF215_STATE_RF_RX;
 	dev1->state = AT86RF215_STATE_RF_RESET;
 	dev1->pending_tx = 0;
 	dev1->rf = _RF24_;
 	dev1->bbc = _BBC1_;
+	dev1->rfIRQ = 0;
+	dev1->bbcIRQ = 0;
 
 	/****** Hardware ******/
 
