@@ -80,11 +80,11 @@ uint8_t at86rf215_get_chan(const at86rf2xx_t *dev)
 void at86rf215_set_chan(at86rf2xx_t *dev, uint8_t channel)
 {
 	if(dev->rf == _RF24_) {
-//		if ((channel > AT86RF215_24_CH_MAX) ||
-//			(channel < AT86RF215_24_CH_MIN) ||
-//			(dev->netdev.chan == channel)) {
-//			return;
-//		}
+		if ((channel > AT86RF215_24_CH_MAX) ||
+			(channel < AT86RF215_24_CH_MIN) ||
+			(dev->netdev.chan == channel)) {
+			return;
+		}
 	} else {
 		if ((channel > AT86RF215_SUB_CH_MAX) ||
 			(dev->netdev.chan == channel)) {
@@ -283,10 +283,11 @@ void at86rf2xx_set_option(at86rf2xx_t *dev, uint16_t option, bool state)
         case AT86RF2XX_OPT_TELL_RX_START:
             DEBUG("[at86rf2xx] opt: %s SFD IRQ\n",
                   (state ? "enable" : "disable"));
-            tmp = at86rf215_reg_read(dev, AT86RF2XX_REG__IRQ_MASK);
+			// TODO
+            tmp = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_IRQS);
             tmp = (state) ? (tmp |  AT86RF2XX_IRQ_STATUS_MASK__RX_START)
                           : (tmp & ~AT86RF2XX_IRQ_STATUS_MASK__RX_START);
-            at86rf215_reg_write(dev, AT86RF2XX_REG__IRQ_MASK, tmp);
+            at86rf215_reg_write(dev, AT86RF215_REG__BBC0_IRQS, tmp);
             break;
         case AT86RF2XX_OPT_ACK_PENDING:
             DEBUG("[at86rf2xx] opt: enabling pending ACKs\n");

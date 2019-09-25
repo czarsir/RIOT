@@ -130,7 +130,7 @@ void at86rf215_configure_phy(at86rf2xx_t *dev)
     /* we must be in TRX_OFF before changing the PHY configuration */
     uint8_t prev_state = at86rf215_set_state(dev, AT86RF215_STATE_RF_TRXOFF);
 
-	/*** Test ***/
+	/*** for Debug ***/
 //	if (dev->netdev.chan == 250) {
 //		uint8_t tmp = at86rf215_reg_read(dev, dev->bbc|AT86RF215_REG__PC);
 //		tmp |= 0x80; // Continuous Transmit
@@ -144,19 +144,11 @@ void at86rf215_configure_phy(at86rf2xx_t *dev)
 //		at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__TXDACQ, 0x80|0x3f);
 //	}
 
-//    uint8_t phy_cc_cca = at86rf215_reg_read(dev, AT86RF2XX_REG__PHY_CC_CCA);
-//    /* Clear previous configuration for channel number */
-//    phy_cc_cca &= ~(AT86RF2XX_PHY_CC_CCA_MASK__CHANNEL);
-//    /* Update the channel register */
-//    phy_cc_cca |= (dev->netdev.chan & AT86RF2XX_PHY_CC_CCA_MASK__CHANNEL);
-//    at86rf215_reg_write(dev, AT86RF2XX_REG__PHY_CC_CCA, phy_cc_cca);
-
 	/*** Channel ***/
 	at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__CS, 0x14); // 0x30*25k=1.2M (Hz)
 	at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__CCF0L, 0xa0);
 	at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__CCF0H, 0x8c); // 0x86f1*25k=863.625M (Hz)
 	at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__CNL, dev->netdev.chan);
-	//at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__CNL, 6);
 	/*** channel scheme ***/
 	at86rf215_reg_write(dev, dev->rf|AT86RF215_REG__CNM, 0);
 

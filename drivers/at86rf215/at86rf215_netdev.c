@@ -48,40 +48,26 @@ static void _irq_handler(void *arg)
 {
 	//netdev_t *dev = (netdev_t *) arg;
 	at86rf2xx_t *pp = (at86rf2xx_t *) arg;
-	//at86rf2xx_t *dev = (at86rf2xx_t *) arg;
 
 	/* use puts() instead of DEBUG(). stack too small */
 	//puts("[rf215] irq_handler\n");
 
-	/*** test ***/
+	/*** for Debug ***/
 	if(sigSync_test == 1) {
 		//puts("[rf215] sigSync_test\n");
 		gpio_clear(GPIO_PIN(PORT_B, 9));
 		//at86rf215_reg_read((at86rf2xx_t *)arg, AT86RF215_REG__BBC1_IRQS);
 		return;
 	}
-//	uint8_t tmp = at86rf215_reg_read((at86rf2xx_t *)arg, AT86RF215_REG__BBC1_IRQS);
-//	if(tmp & AT86RF215_BBCn_IRQS__RXFS_M) {
-//		puts("[rf215] irq_handler : Rx start.\n");
-//	} else {
-//		puts("[rf215] irq_handler : others.\n");
-//	}
-//
-//	if(tmp & AT86RF215_BBCn_IRQS__RXFE_M) {
-//		puts("[rf215] irq_handler : Rx end.\n");
-//	}
 
 	if(sigSync == 1) {
 		sigSync = 0;
 		/*** check: sync (successful) ***/
 		gpio_clear(GPIO_PIN(PORT_B, 9));
-		/*** TODO timer should start from here. ***/
+		/*** Timer starts from here. ***/
 		start_timer(4000);
 		return;
 	}
-
-	//at86rf215_set_state(dd, AT86RF215_STATE_RF_RX);
-	//at86rf215_reg_write(dd, AT86RF215_REG__RF09_CMD, AT86RF215_STATE_RF_RX);
 
 	pp->bbcIRQ = at86rf215_reg_read(pp, AT86RF215_REG__BBC0_IRQS);
 	(pp+1)->bbcIRQ = at86rf215_reg_read((pp+1), AT86RF215_REG__BBC1_IRQS);
@@ -632,22 +618,16 @@ static void _isr(netdev_t *netdev)
         return;
     }
 
-    /* read (consume) device status */
-//	if(dev->rf == _RF24_) {
-//		irq_mask = at86rf215_reg_read(dev, AT86RF215_REG__BBC1_IRQS);
-//	} else {
-//		irq_mask = at86rf215_reg_read(dev, AT86RF215_REG__BBC0_IRQS);
-//	}
+    /* read device status */
 	irq_mask = dev->bbcIRQ;
 
-//    trac_status = at86rf215_reg_read(dev, AT86RF215_REG__RF09_CMD)
-//                  & AT86RF2XX_TRX_STATE_MASK__TRAC;
-
+	/*** RX start ***/
 //    if (irq_mask & AT86RF2XX_IRQ_STATUS_MASK__RX_START) {
 //        netdev->event_callback(netdev, NETDEV_EVENT_RX_STARTED);
 //        DEBUG("[at86rf2xx] EVT - RX_START\n");
 //    }
 
+	/*** RX end ***/
 	if (irq_mask & AT86RF215_BBCn_IRQS__RXFE_M) {
 //		if ((state == AT86RF2XX_STATE_RX_AACK_ON)
 //            || (state == AT86RF2XX_STATE_BUSY_RX_AACK)) {
