@@ -145,7 +145,7 @@ typedef struct {
 
 /********* Variables *********/
 /* device */
-extern at86rf2xx_t *pDev;
+//extern at86rf2xx_t *pDev;
 /* state */
 extern volatile fsm_state_t fsm_state;
 /* buffer */

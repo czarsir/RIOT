@@ -419,6 +419,18 @@ static int _get(netdev_t *netdev, netopt_t opt, void *val, size_t max_len)
 			res = sizeof(netopt_enable_t);
 			break;
 
+		case NETOPT_IPS_STATE:
+			assert(max_len >= sizeof(uint8_t));
+			*((uint8_t *)val) = inphase_state();
+			res = sizeof(uint8_t);
+			break;
+
+		case NETOPT_IPS_RET:
+			assert(max_len >= sizeof(int16_t));
+			*((int16_t *)val) = inphase_calculation_ret();
+			res = sizeof(int16_t);
+			break;
+
         default:
             res = -ENOTSUP;
             break;

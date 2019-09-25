@@ -7,13 +7,8 @@
 /*** Base ***/
 #include <string.h>
 #include <xtimer.h>
-#include "periph/uart.h"
 
 /*** Driver ***/
-#include "at86rf215.h"
-//#include "at86rf215_netdev.h"
-#include "at86rf215_internal.h"
-#include "at86rf215_registers.h"
 
 /*** Self ***/
 #include "inphase.h"
@@ -23,9 +18,6 @@
 #define PRINTF DEBUG
 
 /********* Variables *********/
-
-/*** device ***/
-at86rf2xx_t *pDev;
 
 /*** state ***/
 volatile fsm_state_t fsm_state = IDLE;
@@ -50,19 +42,37 @@ static int8_t* signed_local_pmu_values = (int8_t*)local_pmu_values;
 
 /********* Functions *********/
 
-/*** Connection ***/
+/*** Communication ***/
 extern uint8_t inphase_connection_init(void);
 extern uint8_t inphase_connection_send(uint16_t dest, uint8_t msg_len, void *msg);
 extern uint8_t inphase_connection_send_lite(uint16_t dest, uint8_t msg_len, void *msg);
 extern uint8_t inphase_connection_close(void);
+/*** Sync ***/
+extern void sync_config_initiator(void);
+extern void sync_config_reflector(void);
+extern void sync_config_common(void);
+extern void sync_state(void);
+extern void sync_config_clean(void);
+/*** PMU ***/
+extern void backup_registers(void);
+extern void restore_registers(void);
+extern void mode_config(void);
+extern void transmission_config(void);
+extern void config_clean(void);
+extern void setFrequency(uint16_t f, uint8_t offset);
+extern void sender_pmu(void);
+extern void receiver_pmu(uint8_t* pmu_value, uint8_t* pmuQF);
 /*** Timer ***/
 extern void init_timer(void);
 extern void start_timer(unsigned int value);
 extern void wait_for_timer(uint8_t id);
 extern void stop_timer(void);
+/*** Serial ***/
+extern void rs232_send(uint8_t data);
 
 /********* Special *********/
 
+/*** Mediator ***/
 static const InphaseConnection conn = {
 	inphase_connection_init,
 	inphase_connection_send,
@@ -73,7 +83,7 @@ static const InphaseConnection conn = {
 
 /********* Application *******************************************************/
 
-/********* Communication *********/
+/********* Protocol *********/
 
 static void send_range_request(void)
 {
@@ -128,15 +138,7 @@ static void send_result_confirm(uint16_t start_address, uint16_t result_length)
 	conn.send(settings.initiator, sizeof(frame_result_confirm_t)+1, &f);
 }
 
-/********* Output *********/
-
-static uint8_t bufByte;
-
-static void rs232_send(uint8_t data)
-{
-	bufByte = data;
-	uart_write(UART_DEV(0), (const uint8_t *)&bufByte, (size_t)1);
-}
+/********* Serial Output *********/
 
 static void send_escaped(uint8_t data)
 {
@@ -153,28 +155,28 @@ static void send_escaped(uint8_t data)
 	}
 }
 
-void binary_start_frame(void)
+static void binary_start_frame(void)
 {
 	rs232_send(BINARY_FRAME_START);
 }
 
-void binary_end_frame(void)
+static void binary_end_frame(void)
 {
 	rs232_send(BINARY_FRAME_END);
 }
 
-void binary_send_byte(uint8_t data)
+static void binary_send_byte(uint8_t data)
 {
 	send_escaped(data);
 }
 
-void binary_send_short(uint16_t data)
+static void binary_send_short(uint16_t data)
 {
 	send_escaped((data >> 8) & 0xFF);
 	send_escaped(data & 0xFF);
 }
 
-void binary_send_data(uint8_t* data, uint8_t length)
+static void binary_send_data(uint8_t* data, uint8_t length)
 {
 	uint8_t i;
 	for (i = 0; i < length; i++) {
@@ -252,9 +254,18 @@ static void active_reflector_subtract(uint16_t last_start,
 	}
 }
 
+int16_t inphase_calculation_ret(void)
+{
+	/*** c = 3e8, f = 0.5e6 ***/
+	/*** phi*c / (f*2*pi) = 300 * phi / pi ***/
+	int16_t phi = (int16_t)(signed_local_pmu_values[1]) - (int16_t)(signed_local_pmu_values[0]);
+	int16_t ret = 300 * phi / 3.14;
+	return ret;
+}
+
 /********* Sync *********/
 
-static int8_t wait_for_dig2(void)
+static int8_t wait_for_sync(void)
 {
 	DEBUG("[inphase] sync: wait\n");
 	while(sigSync) {}
@@ -265,197 +276,23 @@ static int8_t wait_for_dig2(void)
 
 /********* PMU *********/
 
-/*** State ***/
-static uint8_t preState;
-static uint8_t preMode;
-/*** BBC ***/
-static uint8_t bbcPC;
-/*** RF ***/
-static uint8_t rfRXBWC;
-static uint8_t rfRXDFE;
-/*** Frequency ***/
-static uint8_t rfCS;
-static uint8_t rfCCF0L;
-static uint8_t rfCCF0H;
-static uint8_t rfCNL;
-/*** Interrupt ***/
-static uint8_t bbcIRQ;
-
-static void backup_registers(void)
-{
-	/*** State ***/
-	preState = at86rf215_set_state(pDev, AT86RF215_STATE_RF_TRXOFF);
-
-	preMode = at86rf215_reg_read(pDev, AT86RF215_REG__RF_IQIFC1);
-
-	/*** BBC ***/
-	bbcPC = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PC);
-
-	/*** RF ***/
-	rfRXBWC = at86rf215_reg_read(pDev, pDev->rf|AT86RF215_REG__RXBWC);
-	rfRXDFE = at86rf215_reg_read(pDev, pDev->rf|AT86RF215_REG__RXDFE);
-
-	/*** Frequency ***/
-	rfCS = at86rf215_reg_read(pDev, pDev->rf|AT86RF215_REG__CS);
-	rfCCF0L = at86rf215_reg_read(pDev, pDev->rf|AT86RF215_REG__CCF0L);
-	rfCCF0H = at86rf215_reg_read(pDev, pDev->rf|AT86RF215_REG__CCF0H);
-	rfCNL = at86rf215_reg_read(pDev, pDev->rf|AT86RF215_REG__CNL);
-
-	/*** Interrupt ***/
-	bbcIRQ = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__IRQM);
-}
-
-static void restore_registers(void)
-{
-	at86rf215_set_state(pDev, AT86RF215_STATE_RF_TRXOFF);
-
-	at86rf215_reg_write(pDev, AT86RF215_REG__RF_IQIFC1, preMode);
-
-	/*** BBC ***/
-	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PC, bbcPC);
-
-	/*** RF ***/
-	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__RXBWC, rfRXBWC);
-	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__RXDFE, rfRXDFE);
-
-	/*** Frequency ***/
-	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CS, rfCS);
-	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CCF0L, rfCCF0L);
-	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CCF0H, rfCCF0H);
-	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CNL, rfCNL);
-	/* channel scheme */
-	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CNM, 0);
-
-	/*** Interrupt ***/
-	at86rf215_reg_read(pDev, AT86RF215_REG__BBC1_IRQS);
-	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__IRQM, bbcIRQ);
-
-//	/*** restore State ***/
-//	//at86rf215_set_state(pDev, preState);
-	at86rf215_set_state(pDev, AT86RF215_STATE_RF_RX);
-}
-
-/*** set the frequency in MHz
- * if offset == 1, the frequency is 0.5 Mhz higher
- * frequency must be between 2322 MHz and 2527 MHz
- */
-static void setFrequency(uint16_t f, uint8_t offset)
-{
-	(void)offset;
-	at86rf215_set_state(pDev, AT86RF215_STATE_RF_TRXOFF);
-
-	/*** Channel ***/
-	/* 0x14 for 2.4G (Scheme 0) */
-	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CS, 0x14);
-	/* 0x8ca0 for 2.4G (Scheme 0) */
-	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CCF0L, 0xa0);
-	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CCF0H, 0x8c);
-	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CNL, f);
-	/* channel scheme */
-	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CNM, 0);
-}
-
-static void sender_pmu(void)
-{
-	at86rf215_reg_write(pDev,  pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TXPREP);
-	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TX);
-	/*** wait for receiver to measure ***/
-	xtimer_usleep(120);
-}
-
-static void receiver_pmu(uint8_t* pmu_value, uint8_t* pmuQF)
-{
-	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TXPREP);
-	//xtimer_usleep(10);
-	//at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0x81);
-	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_RX);
-	//at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0x41);
-	/*** wait for sender to be ready ***/
-	xtimer_usleep(70); // tx_delay + PHR = 297, extra = 50.
-
-	//at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0x5d); // 0b 010 111 01.
-	//xtimer_usleep(5);
-	*pmu_value = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PMUVAL);
-	*pmuQF = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PMUQF);
-	(void)pmuQF;
-	//at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0);
-}
-
-void dingtest(void)
-{
-	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_TXPREP);
-	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CMD, AT86RF215_STATE_RF_RX);
-//	uint8_t tmp = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PC);
-//	tmp &= ~(0x80); // Continuous Transmit
-//	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PC, tmp);
-}
-void dingpmu(void)
-{
-	uint8_t tmp;
-	tmp = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PMUVAL);
-	PRINTF("PMU: %u\n", tmp);
-	tmp = at86rf215_reg_read(pDev, pDev->bbc|AT86RF215_REG__PMUC);
-	PRINTF("PMUC: 0x%x\n", tmp);
-	tmp = at86rf215_get_state(pDev);
-	PRINTF("state: 0x%x\n", tmp);
-}
-void dingpmustart(void)
-{
-	uint8_t tmp;
-	at86rf215_set_state(pDev, AT86RF215_STATE_RF_TRXOFF);
-	//at86rf215_reg_write(pDev, AT86RF215_REG__RF_IQIFC1, 0x12);
-	//at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PC, 0x04);
-	tmp = (0x0 << 4) | (0x6); // 0x7: 800 kHz.
-	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__RXBWC, tmp);
-	/* RCUT | - | SR: RX Sample Rate */
-	tmp = (0x4 << 5) | (0x4);
-	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__RXDFE, tmp);
-	tmp = (0x1 << 5) | (0x1);
-	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__AGCS, tmp);
-
-    at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CS, 0x14);
-    at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CCF0L, 0xa0);
-    at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CCF0H, 0x8c);
-    at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CNL, 0);
-    at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__CNM, 0);
-
-	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0x83);
-}
-void dingpmustop(void)
-{
-	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0);
-}
-
 static void pmu_magic_mode_classic(pmu_magic_role_t role)
 {
 	uint8_t i;
 	for (i=sigSync_i; i < PMU_MEASUREMENTS; i++) {
-		// use 500 kHz spacing
-//		uint8_t f, f_full, f_half;
-		//gpio_set(GPIO_PIN(PORT_B, 9));
 		switch (role) {
 			case PMU_MAGIC_ROLE_INITIATOR:		// initiator
-//				f = i;
-//				f_full = f >> 1;
-//				f_half = f & 0x01;
-				//setFrequency(PMU_START_FREQUENCY + f_full, f_half);
 				setFrequency(PMU_START_FREQUENCY + i, 0);
-				//at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0xdd);
 				receiver_pmu(&local_pmu_values[i], &pmuQF[i]);
 				sender_pmu();
 				break;
 			default:	// reflector
-//				f = i + 1; // reflector is 500 kHz higher
-//				f_full = f >> 1;
-//				f_half = f & 0x01;
-				//setFrequency(PMU_START_FREQUENCY + f_full, f_half);
 				setFrequency(PMU_START_FREQUENCY + i, 0);
-				//at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0xdd);
 				sender_pmu();
 				receiver_pmu(&local_pmu_values[i], &pmuQF[i]);
 				break;
 		}
-		//at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0);
+
 		wait_for_timer(5);
 
 		sigSync_i = i+1;
@@ -492,31 +329,21 @@ static int8_t pmu_magic(pmu_magic_role_t role, pmu_magic_mode_t mode)
 
 	init_timer();
 
-	//hal_subregister_write(SR_TX_PWR, 0xF);			// set TX output power to -17dBm to avoid reflections
-//	hal_subregister_write(SR_TX_PWR, 0x0);			// set TX output power to +4dBm, MAXIMUM POWER
-//	hal_register_read(RG_IRQ_STATUS);				// clear all pending interrupts
-//	hal_subregister_write(SR_ARET_TX_TS_EN, 0x1);	// signal frame transmission via DIG2
-//	hal_subregister_write(SR_IRQ_2_EXT_EN, 0x1);	// enable time stamping via DIG2
-
-	// this line is normally only done at the reflector:
-//	hal_subregister_write(SR_TOM_EN, 0x0);			// disable TOM mode (unclear why this is done here)
-
 	sigSync_i = 0;
 SYNC:
 	// TODO ding
 	/*** Sync config ***/
 	switch (role) {
 		case PMU_MAGIC_ROLE_INITIATOR:
-			at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__IRQM, AT86RF215_BBCn_IRQM__RXFE_M);
+			sync_config_initiator();
 			break;
 		case PMU_MAGIC_ROLE_REFLECTOR:
-			at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__IRQM, AT86RF215_BBCn_IRQM__TXFE_M);
+			sync_config_reflector();
 			break;
 		default:
 			break;
 	}
-	at86rf215_reg_read(pDev, AT86RF215_REG__BBC0_IRQS);
-	at86rf215_reg_read(pDev, AT86RF215_REG__BBC1_IRQS);
+	sync_config_common();
 	sigSync = 1;
 
 	/*** Frequency ***/
@@ -525,63 +352,32 @@ SYNC:
 
 	/****** Sync ******/
 
-	gpio_set(GPIO_PIN(PORT_B, 9));
+	/*** for Debug ***/
+	//gpio_set(GPIO_PIN(PORT_B, 9));
 
 	/* Initiator */
-	at86rf215_set_state(pDev, AT86RF215_STATE_RF_RX);
+	sync_state();
 
 	/* reflector sends the synchronization frame */
 	if (role == PMU_MAGIC_ROLE_REFLECTOR) {
-		// send PMU start
-
-		// TODO: send the correct frame here, just to sleep well...
-
+		/*** send PMU start ***/
 		frame_range_basic_t f;
 		f.frame_type = PMU_START;
 		conn.send_lite(settings.initiator, 1, &f);
-
-		//AT86RF233_NETWORK.send(initiator_requested, 1, &f);
-
-		// send PMU start on bare metal, as the normal protocol stack is too slow for us to be able to see the DIG2 signal
-		//packetbuf_copyfrom(&f, 1);
-		//packetbuf_set_addr(PACKETBUF_ADDR_RECEIVER, &initiator_requested);
-		//packetbuf_set_addr(PACKETBUF_ADDR_SENDER, &linkaddr_node_addr);
-		//packetbuf_compact();
-
-		//xtimer_usleep(2000); // wait for initiator, it needs more time before it listens to DIG2
-
-//		hal_subregister_write(SR_TRX_CMD, CMD_TX_ARET_ON);
-//		hal_set_slptr_high(); // send the packet at the latest time possible
-//		hal_set_slptr_low();
 	}
 
 	/* wait for sync signal */
-	if (wait_for_dig2()) {
-		// DIG2 signal not found, abort measurement
-		// to be honest: if the reflector does not get the DIG2 from its own sending
-		// there must be something horribly wrong...
-		ret_val = -1; // DIG2 signal not seen, abort!
+	if (wait_for_sync()) {
+		ret_val = -1; // signal not seen, abort!
 		goto BAIL;
 	}
-	at86rf215_set_state(pDev, AT86RF215_STATE_RF_TRXOFF);
-	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__IRQM, 0);
-	at86rf215_reg_read(pDev, AT86RF215_REG__BBC0_IRQS);
-	at86rf215_reg_read(pDev, AT86RF215_REG__BBC1_IRQS);
-	/*** test ***/
+	config_clean();
+	/*** for Debug ***/
 	//sigSync_test = 1;
-	if(role == PMU_MAGIC_ROLE_INITIATOR) {
-		//at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__IRQM, AT86RF215_BBCn_IRQM__RXFS_M);
-	}
-
-	if (role == PMU_MAGIC_ROLE_REFLECTOR) {
-		//xtimer_usleep(9.5243);	// DIG2 signal is on average 9.5243 us delayed on the initiator, reflector waits
-	} else {
-		//xtimer_usleep(1470);
-	}
 
 	/****** Sync (done) ******/
 
-	//start_timer();		// timer counts to 7, we have 244us between synchronization points
+	//start_timer(); // obsolete, but reserve.
 
 	// now in sync with the other node
 
@@ -615,85 +411,21 @@ SYNC:
 //		}
 	}
 
-	switch (role) {
-		case PMU_MAGIC_ROLE_INITIATOR:		// initiator
-//			hal_subregister_write(SR_TX_RX, 0);				// RX PLL frequency is selected
-			break;
-		default:	// reflector
-//			hal_subregister_write(SR_PMU_IF_INVERSE, 1);	// Inverse IF position
-//			hal_subregister_write(SR_TX_RX, 1);				// TX PLL frequency is selected
-			break;
-	}
-
-//	hal_subregister_write(SR_RX_PDT_DIS, 1);	// RX Path is disabled
-//	hal_subregister_write(SR_PMU_EN, 1);		// enable PMU
-//	hal_subregister_write(SR_MOD_SEL, 1);		// manual control of modulation data
-//	hal_subregister_write(SR_MOD, 0);			// continuous 0 chips for modulation
-//	hal_subregister_write(SR_TX_RX_SEL, 1);		// manual control of PLL frequency mode
-
-	// TODO ding
-	uint8_t tmp;
-	at86rf215_reg_write(pDev, AT86RF215_REG__RF_IQIFC1, 0x12);
-	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PC, 0x04);
-	tmp = (0x0 << 4) | (0x8); // 0x7: 800 kHz.
-	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__RXBWC, tmp);
-	/* RCUT | - | SR: RX Sample Rate */
-	tmp = (0x4 << 5) | (0x4);
-	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__RXDFE, tmp);
-	/*** PMU ***/
-	/* CCFTS 1 | IQSEL 1 | FED 0 | SYNC 111 | AVG 0 | EN 1 */
-	tmp = 0x81;
-	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, tmp);
+	mode_config();
 
 	wait_for_timer(1);
 
-	/*** Continuous Transmit ***/
-	//at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PC, bbcPC|0x80);
-	/*** TX DAC overwrite ***/
-	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__TXDACI, 0x80|0x7e);
-	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__TXDACQ, 0x80|0x3f);
-#define BUFF_LEN 12
-	/*** write 0 to buffer ***/
-	uint8_t fb_data[BUFF_LEN] = {0};
-	//PRINTF("[inphase] fb_data: 0x%x, 0x%x, 0x%x\n", fb_data[2], fb_data[5], fb_data[7]);
-	at86rf215_txfb_write(pDev, 0, fb_data, BUFF_LEN);
-	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__TXFLH, 0);
-	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__TXFLL, BUFF_LEN + 2);
-	/* antenna diversity control is skipped, we only have one antenna */
+	transmission_config();
 
 	//wait_for_timer(2);
 
 	/* measure RSSI (initiator) */
-//	uint8_t rssi;
-//	hal_register_write(RG_TRX_STATE, CMD_FORCE_PLL_ON);
-//	switch (role) {
-//		case PMU_MAGIC_ROLE_INITIATOR:		// initiator
-//			hal_register_write(RG_TRX_STATE, CMD_RX_ON);
-//			_delay_us(50); // wait some time for sender to be ready...
-//			rssi = hal_subregister_read(SR_RSSI);
-//			break;
-//		default:	// reflector
-//			hal_register_write(RG_TRX_STATE, CMD_TX_START);
-//			break;
-//	}
 
 	wait_for_timer(3);
 
 	/* measure RSSI (reflector) */
-//	hal_register_write(RG_TRX_STATE, CMD_FORCE_PLL_ON);
-//	switch (role) {
-//		case PMU_MAGIC_ROLE_INITIATOR:		// initiator
-//			hal_register_write(RG_TRX_STATE, CMD_TX_START);
-//			break;
-//		default:	// reflector
-//			hal_register_write(RG_TRX_STATE, CMD_RX_ON);
-//			_delay_us(50); // wait some time for sender to be ready...
-//			rssi = hal_subregister_read(SR_RSSI);
-//			break;
-//	}
 
 	/* TODO: set gain according to rssi */
-//	hal_register_write(RG_TST_AGC, 0x09);
 
 	wait_for_timer(4);
 
@@ -705,13 +437,7 @@ SYNC:
 			pmu_magic_mode_classic(role);
 			break;
 	}
-	/*** PMU ***/
-	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PMUC, 0);
-	/*** Continuous Transmit ***/
-	at86rf215_reg_write(pDev, pDev->bbc|AT86RF215_REG__PC, bbcPC);
-	/*** TX DAC overwrite ***/
-	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__TXDACI, 0);
-	at86rf215_reg_write(pDev, pDev->rf|AT86RF215_REG__TXDACQ, 0);
+	config_clean();
 	if (sigSync_i < PMU_MEASUREMENTS) {
 		stop_timer();
 		goto SYNC;
@@ -741,6 +467,7 @@ static void reset_statemachine(void)
 	status_code = next_status_code;
 }
 
+/*** Protocol - state machine ***/
 void statemachine(uint8_t frame_type, frame_subframe_t *frame)
 {
 	PRINTF("[inphase] frame_type: 0x%x, fsm_state: %u\n", frame_type, fsm_state);

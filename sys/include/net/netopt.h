@@ -556,7 +556,10 @@ typedef enum {
 
     /* add more options if needed */
 
+	/*** InPhase-System ***/
 	NETOPT_IPS_START,
+	NETOPT_IPS_STATE,
+	NETOPT_IPS_RET,
 
     /**
      * @brief   maximum number of options defined here.
