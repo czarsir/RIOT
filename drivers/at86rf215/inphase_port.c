@@ -322,3 +322,19 @@ void rs232_send(uint8_t data)
 	bufByte = data;
 	uart_write(UART_DEV(0), (const uint8_t *)&bufByte, (size_t)1);
 }
+
+/********* Watchdog *********/
+
+void ips_watchdog_callback(void)
+{
+	fsm_state = IDLE;
+}
+
+void ips_watchdog_start(void)
+{
+	// config ips_watchdog_callback
+}
+
+void ips_watchdog_stop(void)
+{
+}

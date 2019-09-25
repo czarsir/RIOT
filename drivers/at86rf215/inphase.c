@@ -69,6 +69,9 @@ extern void wait_for_timer(uint8_t id);
 extern void stop_timer(void);
 /*** Serial ***/
 extern void rs232_send(uint8_t data);
+/*** Watchdog ***/
+extern void ips_watchdog_start(void);
+extern void ips_watchdog_stop(void);
 
 /********* Special *********/
 
@@ -477,6 +480,7 @@ void statemachine(uint8_t frame_type, frame_subframe_t *frame)
 		{
 			/*** initiator - start ***/
 			if (frame_type == RANGE_REQUEST_START) {
+				ips_watchdog_start();
 				status_code = DISTANCE_RUNNING;
 				send_range_request();
 				/* maximum allowed retransmissions */
@@ -491,6 +495,7 @@ void statemachine(uint8_t frame_type, frame_subframe_t *frame)
 					PRINTF("[inphase] ranging request ignored (ranging not allowed)\n");
 					fsm_state = IDLE;
 				} else {
+					ips_watchdog_start();
 					status_code = DISTANCE_RUNNING;
 					send_range_accept();
 					next_status_code = DISTANCE_TIMEOUT;
@@ -586,6 +591,7 @@ void statemachine(uint8_t frame_type, frame_subframe_t *frame)
 				} else {
 					// got all results, finished
 					fsm_state = IDLE;
+					ips_watchdog_stop();
 					DEBUG("[inphase] done.\n");
 					DEBUG("[inphase] PMU-QF:");
 					for(int i=0; i<PMU_MEASUREMENTS; i++) {
@@ -640,6 +646,7 @@ void statemachine(uint8_t frame_type, frame_subframe_t *frame)
 						// start address points outside of the pmu data, this indicates that the initiator does not need more data
 						fsm_state = IDLE;
 						status_code = DISTANCE_IDLE;
+						ips_watchdog_stop();
 						DEBUG("[inphase] done. %u\n", start_address);
 						DEBUG("[inphase] PMU:");
 						for(int i=0; i<PMU_MEASUREMENTS; i++) {
@@ -672,6 +679,7 @@ void statemachine(uint8_t frame_type, frame_subframe_t *frame)
 					// this can be an RSSI result...
 					fsm_state = IDLE; // no other results allowed, return to idle
 					status_code = DISTANCE_IDLE;
+					ips_watchdog_stop();
 				}
 			} else if (frame_type == RANGE_REQUEST) {
 				// allow new measurement, even when waiting for results to be transmitted
